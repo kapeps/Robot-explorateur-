@@ -7,11 +7,11 @@
 #define ENCODER_LEFT_A 3
 #define ENCODER_LEFT_B 7
 #define WHEEL_RADIUS 35//mm
-#define QUANTITY_OF_TICS 352
+#define QUANTITY_OF_TICS 340
 #define DISTANCE_BETWEEN_WHEELS 141//mm
-#define KP_LEFT 350
+#define KP_LEFT 400
 #define KI_LEFT 10
-#define KD_LEFT 10
-#define KP_RIGHT 350
-#define KI_RIGHT 10
-#define KD_RIGHT 10
+#define KD_LEFT 0
+#define KP_RIGHT 550
+#define KI_RIGHT 15
+#define KD_RIGHT 0
