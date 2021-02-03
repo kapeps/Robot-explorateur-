@@ -44,17 +44,15 @@ void setup() {
   control_right.setOutputLimits(-255, 255);
 
 
-  analogWrite(RIGHT_MOTOR_PWM, 100);
 }
 
 void loop() {
 
-  //Serial.print("rightSpeed : ");
-  //Serial.println(rightSpeed);
-  //Serial.print("leftSpeed : ");
-  //Serial.println(leftSpeed);
+  Serial.print("rightSpeed : ");
+  Serial.println(rightSpeed);
+  Serial.print("leftSpeed : ");
+  Serial.println(leftSpeed);
   controlMotors();
-  Serial.println(Left_Motor.get_distance());
 
 
 }
@@ -87,6 +85,5 @@ void controlMotors() {
     digitalWrite(RIGHT_MOTOR_DIRECTION, HIGH);
 
   }
-
 
 }
