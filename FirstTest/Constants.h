@@ -6,10 +6,12 @@
 #define ENCODER_RIGHT_B 4
 #define ENCODER_LEFT_A 3
 #define ENCODER_LEFT_B 7
-#define WHEEL_RADIUS 35
-#define KP_LEFT 150
-#define KI_LEFT 25
+#define WHEEL_RADIUS 35//mm
+#define QUANTITY_OF_TICS 352
+#define DISTANCE_BETWEEN_WHEELS 141//mm
+#define KP_LEFT 350
+#define KI_LEFT 10
 #define KD_LEFT 10
-#define KP_RIGHT 150
-#define KI_RIGHT 25
+#define KP_RIGHT 350
+#define KI_RIGHT 10
 #define KD_RIGHT 10
