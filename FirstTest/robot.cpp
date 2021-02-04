@@ -33,11 +33,20 @@ void Robot::turnAroundItself(float angle) {
 
   _lastLeftDistance = Left_Motor.get_distance();
   _lastRightDistance = Right_Motor.get_distance();
-  while ((-Right_Motor.get_distance() + _lastRightDistance + Left_Motor.get_distance() - _lastLeftDistance) / 2 < angle * DISTANCE_BETWEEN_WHEELS * QUANTITY_OF_TICS / (2 * WHEEL_RADIUS * 360)) {
-    desiredSpeedLeft = _linearSpeed;
-    desiredSpeedRight = -_linearSpeed;
-    controlMotors();
+  if ( angle > 0) {
+    while ((-Right_Motor.get_distance() + _lastRightDistance + Left_Motor.get_distance() - _lastLeftDistance) / 2 < angle * DISTANCE_BETWEEN_WHEELS * QUANTITY_OF_TICS / (2 * WHEEL_RADIUS * 360)) {
+      desiredSpeedLeft = _linearSpeed;
+      desiredSpeedRight = -_linearSpeed;
+      controlMotors();
+    }
+  } else {
+    while ((-Right_Motor.get_distance() + _lastRightDistance + Left_Motor.get_distance() - _lastLeftDistance) / 2 > angle * DISTANCE_BETWEEN_WHEELS * QUANTITY_OF_TICS / (2 * WHEEL_RADIUS * 360)) {
+      desiredSpeedLeft = -_linearSpeed;
+      desiredSpeedRight = _linearSpeed;
+      controlMotors();
+    }
   }
+
   //Stop
   _beginTime = millis();
   while (millis() - _beginTime < 200) {
@@ -50,11 +59,21 @@ void Robot::turnAroundItself(float angle) {
 void Robot::walkStraight(float distanceMeters) {
   _lastLeftDistance = Left_Motor.get_distance();
   _lastRightDistance = Right_Motor.get_distance();
-  while (((+Right_Motor.get_distance() - _lastRightDistance + Left_Motor.get_distance() - _lastLeftDistance) / 2) < distanceMeters * 1000 * QUANTITY_OF_TICS / ( 2 * WHEEL_RADIUS * 3.14))   {
-    desiredSpeedLeft = _linearSpeed;
-    desiredSpeedRight = _linearSpeed;
-    controlMotors();
+
+  if (distanceMeters > 0) {
+    while (((+Right_Motor.get_distance() - _lastRightDistance + Left_Motor.get_distance() - _lastLeftDistance) / 2) < distanceMeters * 1000 * QUANTITY_OF_TICS / ( 2 * WHEEL_RADIUS * 3.14))   {
+      desiredSpeedLeft = _linearSpeed;
+      desiredSpeedRight = _linearSpeed;
+      controlMotors();
+    }
+  } else {
+    while (((+Right_Motor.get_distance() - _lastRightDistance + Left_Motor.get_distance() - _lastLeftDistance) / 2) > distanceMeters * 1000 * QUANTITY_OF_TICS / ( 2 * WHEEL_RADIUS * 3.14))   {
+      desiredSpeedLeft = -_linearSpeed;
+      desiredSpeedRight = -_linearSpeed;
+      controlMotors();
+    }
   }
+
   _beginTime = millis();
   while (millis() - _beginTime < 200) {
     desiredSpeedLeft = 0;

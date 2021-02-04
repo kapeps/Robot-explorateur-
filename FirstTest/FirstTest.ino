@@ -2,13 +2,12 @@
 #include "Constants.h"
 #include "PID.h"
 #include "Robot.h"
-
+#include <math.h>
 
 Robot Robot;
 float vertical = 1;
 float horizontal = 1;
-float desiredDistance = 0;
-
+float finalAngleToStart = -45;
 
 void motor1ISR() {
   Robot.Right_Motor.readEncoder();
@@ -33,15 +32,13 @@ void setup() {
 
 void loop() {
 
+  Robot.turnAroundItself(atan (horizontal / vertical) * 360 / (2 * PI));
+  Robot.walkStraight(sqrt(sq(horizontal) + sq(vertical)));
+  Robot.turnAroundItself(finalAngleToStart - atan (horizontal / vertical) * 360 / (2 * PI));
 
-  Robot.turnAroundItself(90);
-  Robot.turnAroundItself(90);
-
-  Robot.walkStraight(sqrt(sq(vertical) + sq(horizontal)));
   while (1) {
     Robot.desiredSpeedLeft = 0;
     Robot.desiredSpeedRight = 0;
-
     Robot.controlMotors();
   }
 
