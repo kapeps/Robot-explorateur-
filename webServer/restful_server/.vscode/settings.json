@@ -1,0 +1,22 @@
+{
+    "C_Cpp.clang_format_style": "Visual Studio",
+    "editor.formatOnSave": false,
+    "[cpp]": {
+        "editor.quickSuggestions": true
+    },
+    "[c]": {
+        "editor.quickSuggestions": true
+    },
+    "C_Cpp.intelliSenseEngine": "Tag Parser",
+    "C_Cpp.default.compilerPath": "C:\\Users\\anoel\\.espressif\\tools\\xtensa-esp32-elf\\esp-2020r3-8.4.0\\xtensa-esp32-elf\\bin\\xtensa-esp32-elf-gdb.exe",
+    "idf.portWin": "COM5",
+    "idf.flashType": "UART",
+    "idf.adapterTargetName": "esp32",
+    "idf.openOcdConfigs": [
+        "interface/ftdi/esp32_devkitj_v1.cfg",
+        "target/esp32.cfg"
+    ],
+    "files.associations": {
+        "fcntl.h": "c"
+    }
+}
