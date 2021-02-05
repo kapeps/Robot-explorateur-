@@ -26,20 +26,25 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(ENCODER_RIGHT_A), motor1ISR, RISING);
   attachInterrupt(digitalPinToInterrupt(ENCODER_LEFT_A), motor2ISR, RISING);
   Serial.begin(9600);
-  Robot._linearSpeed = 0.4;
+
 
 }
 
 void loop() {
-
+  Robot.robotMode = false;
   Robot.turnAroundItself(atan (horizontal / vertical) * 360 / (2 * PI));
- 
-  Robot._lastLeftDistance = 0;
-  Robot._lastRightDistance = 0;
+
+  Robot.walkStraight(sqrt(sq(horizontal) + sq(vertical)));
+  
+  Robot.turnAroundItself(finalAngleToStart - atan (horizontal / vertical) * 360 / (2 * PI));
+
+
   while (1) {
-    Robot.desiredDistanceRight = 0;
-    Robot.desiredDistanceLeft = 0;
+    Robot.robotMode = true;
+    Robot.desiredSpeedLeft = 0;
+    Robot.desiredSpeedRight = 0;
     Robot.controlMotors();
+
   }
 
 
