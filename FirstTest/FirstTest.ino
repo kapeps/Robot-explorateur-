@@ -4,10 +4,13 @@
 #include "Robot.h"
 #include <math.h>
 
-Robot Robot;
 float vertical = 1;
 float horizontal = 1;
-float finalAngleToStart = 0;
+float finalAngleToStart = -90;
+float maximum_velocity = 0.4;
+Robot Robot(maximum_velocity);
+
+
 
 void motor1ISR() {
   Robot.Right_Motor.readEncoder();

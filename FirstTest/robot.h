@@ -8,7 +8,7 @@
 
 class Robot {
   public:
-    Robot();
+    Robot(float maximumVelocity);
     Motor Right_Motor = Motor(RIGHT_MOTOR_DIRECTION, ENCODER_RIGHT_A, ENCODER_RIGHT_B);
     Motor Left_Motor = Motor(LEFT_MOTOR_DIRECTION, ENCODER_LEFT_A, ENCODER_LEFT_B);
  
@@ -37,7 +37,8 @@ class Robot {
 
     PID _control_distance_left;
     PID _control_distance_right;
-    
+
+    float _maximumVelocity;
     float _rightSpeed = 0;
     float _leftSpeed = 0;
 

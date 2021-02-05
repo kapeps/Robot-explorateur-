@@ -2,7 +2,8 @@
 #include "Motor.h"
 
 
-Robot::Robot() {
+Robot::Robot(float maximumVelocity) {
+  _maximumVelocity = maximumVelocity;
   _control_left.setTunings(KP_LEFT, KI_LEFT, KD_LEFT);
   _control_left.setSampleTime(1);
   _control_left.setOutputLimits(-255, 255);
@@ -14,11 +15,11 @@ Robot::Robot() {
 
   _control_distance_left.setTunings(KP_LEFT_DISTANCE, KI_LEFT_DISTANCE, KD_LEFT_DISTANCE);
   _control_distance_left.setSampleTime(1);
-  _control_distance_left.setOutputLimits(-LIMIT_VELOCITY, LIMIT_VELOCITY);
+  _control_distance_left.setOutputLimits(-_maximumVelocity, _maximumVelocity);
 
   _control_distance_right.setTunings(KP_RIGHT_DISTANCE, KI_RIGHT_DISTANCE, KD_RIGHT_DISTANCE);
   _control_distance_right.setSampleTime(1);
-  _control_distance_right.setOutputLimits(-LIMIT_VELOCITY, LIMIT_VELOCITY);
+  _control_distance_right.setOutputLimits(-_maximumVelocity, _maximumVelocity);
 }
 
 
