@@ -23,4 +23,3 @@ void blinkTask( void * pvParameters )
 void startBlinkTask(){
     xTaskCreate(blinkTask, "Blink Task", 2000, NULL, tskIDLE_PRIORITY, NULL );
 }
-
