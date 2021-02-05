@@ -22,7 +22,7 @@ byte Motor::get_encoder_interrupt_pin() {
 
 float Motor::calculate_speed() {
   long deltaTime = millis() - _lastMillis;
-  if(deltaTime > 20){
+  if(deltaTime > 10){
     _lastMillis = millis();
     _speed = (_distance - _lastDistance) * 2 * 3.14 * WHEEL_RADIUS / deltaTime / QUANTITY_OF_TICS;
     _lastDistance = _distance;

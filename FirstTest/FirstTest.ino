@@ -7,7 +7,7 @@
 Robot Robot;
 float vertical = 1;
 float horizontal = 1;
-float finalAngleToStart = -45;
+float finalAngleToStart = 0;
 
 void motor1ISR() {
   Robot.Right_Motor.readEncoder();
@@ -26,19 +26,19 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(ENCODER_RIGHT_A), motor1ISR, RISING);
   attachInterrupt(digitalPinToInterrupt(ENCODER_LEFT_A), motor2ISR, RISING);
   Serial.begin(9600);
-
+  Robot._linearSpeed = 0.4;
 
 }
 
 void loop() {
 
   Robot.turnAroundItself(atan (horizontal / vertical) * 360 / (2 * PI));
-  Robot.walkStraight(sqrt(sq(horizontal) + sq(vertical)));
-  Robot.turnAroundItself(finalAngleToStart - atan (horizontal / vertical) * 360 / (2 * PI));
-
+ 
+  Robot._lastLeftDistance = 0;
+  Robot._lastRightDistance = 0;
   while (1) {
-    Robot.desiredSpeedLeft = 0;
-    Robot.desiredSpeedRight = 0;
+    Robot.desiredDistanceRight = 0;
+    Robot.desiredDistanceLeft = 0;
     Robot.controlMotors();
   }
 
