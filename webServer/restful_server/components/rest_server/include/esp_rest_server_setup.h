@@ -2,6 +2,7 @@
 #define ESP_REST_SERVER_SETUP
 
 
+
 #include "sdkconfig.h"
 #include "driver/gpio.h"
 #include "esp_vfs_semihost.h"
@@ -23,7 +24,6 @@
 
 #define MDNS_INSTANCE "esp home web server"
 
-static const char *TAG = "esp_rest_main";
 
 esp_err_t start_rest_server(const char *base_path);
 static void initialise_mdns(void);

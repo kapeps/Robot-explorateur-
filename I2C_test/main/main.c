@@ -31,13 +31,15 @@ void app_main(void)
         // .clk_flags = 0,          /*!< Optional, you can use I2C_SCLK_SRC_FLAG_* flags to choose i2c source clock here. */
     };
 
-    if(i2c_param_config(I2C_NUM_0, &conf) == ESP_OK){
+    if(i2c_param_config(I2C_NUM_0, &conf) != ESP_OK){
             printf("Could not config");
     }
 
     if( i2c_driver_install(I2C_NUM_0, I2C_MODE_MASTER, 0, 0, 0) != ESP_OK){
             printf("Could not install");
     }
+
+    
     uint8_t adress = 8;
     uint8_t data[] = { 'H', 'e', 'l', 'l', 'o', ' ', 'a', 'r', 'd', 'u', 'i', 'n', 'o' , '\n'} ;
 

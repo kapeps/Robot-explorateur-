@@ -10,8 +10,6 @@
 #include "cJSON.h"
 
 
-static const char *REST_TAG = "esp-rest";
-
 #define FILE_PATH_MAX (ESP_VFS_PATH_MAX + 128)
 #define SCRATCH_BUFSIZE (10240)
 

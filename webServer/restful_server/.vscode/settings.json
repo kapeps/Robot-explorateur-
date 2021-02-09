@@ -17,6 +17,19 @@
         "target/esp32.cfg"
     ],
     "files.associations": {
-        "fcntl.h": "c"
+        "fcntl.h": "c",
+        "array": "cpp",
+        "deque": "cpp",
+        "initializer_list": "cpp",
+        "list": "cpp",
+        "vector": "cpp",
+        "xhash": "cpp",
+        "xstring": "cpp",
+        "xtree": "cpp",
+        "xutility": "cpp",
+        "string": "cpp",
+        "unordered_map": "cpp",
+        "string_view": "cpp",
+        "xmemory": "cpp"
     }
 }

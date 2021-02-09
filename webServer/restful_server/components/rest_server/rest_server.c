@@ -2,6 +2,8 @@
 
 #include "led_blink_task.h"
 
+static const char *REST_TAG = "esp-rest";
+
 /* Set HTTP response content type according to file extension */
 static esp_err_t set_content_type_from_file(httpd_req_t *req, const char *filepath)
 {

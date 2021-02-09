@@ -1,5 +1,7 @@
 #include "esp_rest_server_setup.h"
 
+static const char *TAG = "esp_rest_main";
+
 static void initialise_mdns(void)
 {
     mdns_init();
