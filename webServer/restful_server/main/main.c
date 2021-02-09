@@ -3,7 +3,6 @@
 
 void app_main(void)
 {
-    
     init_rest_server(); //Initialize server and runs the task
     startBlinkTask();
 }
