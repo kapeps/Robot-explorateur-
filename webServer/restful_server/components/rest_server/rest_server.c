@@ -139,8 +139,6 @@ static esp_err_t led_post_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
-
-
 /* Simple handler for getting system handler */
 static esp_err_t system_info_get_handler(httpd_req_t *req)
 {

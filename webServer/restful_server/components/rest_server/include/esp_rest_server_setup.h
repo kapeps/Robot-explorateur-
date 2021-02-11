@@ -26,7 +26,6 @@
 
 
 esp_err_t start_rest_server(const char *base_path);
-static void initialise_mdns(void);
 esp_err_t init_fs(void);
 void init_rest_server();
 

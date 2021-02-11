@@ -30,6 +30,19 @@
         "string": "cpp",
         "unordered_map": "cpp",
         "string_view": "cpp",
-        "xmemory": "cpp"
+        "xmemory": "cpp",
+        "*.inc": "cpp",
+        "chrono": "cpp",
+        "complex": "cpp",
+        "*.tcc": "cpp",
+        "istream": "cpp",
+        "streambuf": "cpp",
+        "tuple": "cpp",
+        "*.ipp": "cpp",
+        "coroutine": "cpp",
+        "queue": "cpp",
+        "random": "cpp",
+        "type_traits": "cpp",
+        "utility": "cpp"
     }
 }
