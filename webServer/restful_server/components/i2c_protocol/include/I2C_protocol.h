@@ -5,7 +5,7 @@
 #include "driver/i2c.h"
 #include "driver/gpio.h"
 #include <vector>
-#include <map>
+//#include <map>
 
 
 #include "I2C_protocol_messages.h"
@@ -28,7 +28,7 @@ class I2C_protocol
 
     private:
         i2c_config_t _conf;
-        std::map<Slave_devices, uint8_t> slave_address;
+        //std::map<Slave_devices, uint8_t> slave_address;
 
         static void sendData(const uint8_t data[], const size_t len, uint8_t address);
         static void readData(uint8_t data[], const size_t len, uint8_t address);

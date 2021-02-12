@@ -16,5 +16,6 @@ extern "C" void app_main(void)
 
     i2c_slave_init();
     I2C_protocol my_protocol;
-    my_protocol.scanBus();
+    std::vector<uint8_t> addresses = my_protocol.scanBus(); 
+    my_protocol.identify_adresses(&addresses);
 }

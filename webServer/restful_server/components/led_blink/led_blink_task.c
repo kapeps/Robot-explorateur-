@@ -1,5 +1,10 @@
 #include "led_blink_task.h"
 
+#include <stdio.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "driver/gpio.h"
+#include "sdkconfig.h"
 
 void blinkTask( void * pvParameters )
 {
@@ -21,5 +26,5 @@ void blinkTask( void * pvParameters )
 }
 
 void startBlinkTask(){
-    xTaskCreate(blinkTask, "Blink Task", 2000, NULL, tskIDLE_PRIORITY, NULL );
+    xTaskCreate(blinkTask, "Blink Task", 2048, NULL, tskIDLE_PRIORITY, NULL );
 }

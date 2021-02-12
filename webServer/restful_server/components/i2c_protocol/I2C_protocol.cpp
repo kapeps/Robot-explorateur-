@@ -49,7 +49,7 @@ std::vector<uint8_t> I2C_protocol::scanBus(){
     for (uint8_t i = 0; i < 128; ++i) {
         i2c_cmd_handle_t cmd = i2c_cmd_link_create();
         i2c_master_start(cmd);
-        i2c_master_write_byte(cmd, (i << 1) | I2C_MASTER_WRITE, I2C_MASTER_ACK);
+        i2c_master_write_byte(cmd, (i << 1) | I2C_MASTER_WRITE, true);
         i2c_master_stop(cmd);
         esp_err_t ret = i2c_master_cmd_begin(I2C_NUM, cmd, 50 / portTICK_RATE_MS);
         i2c_cmd_link_delete(cmd);
@@ -74,7 +74,7 @@ void I2C_protocol::sendData(const uint8_t data[], const size_t len, uint8_t addr
     
     i2c_cmd_handle_t cmd = i2c_cmd_link_create();
     i2c_master_start(cmd);
-    i2c_master_write_byte(cmd, (address << 1) | I2C_MASTER_WRITE, I2C_MASTER_ACK);
+    i2c_master_write_byte(cmd, (address << 1) | I2C_MASTER_WRITE, true);
     i2c_master_write(cmd, data, len, true);
     i2c_master_stop(cmd);
     I2C_protocol::log_I2C_master_cmd_begin_err( i2c_master_cmd_begin(I2C_NUM, cmd, 1000 / portTICK_RATE_MS) );
@@ -87,7 +87,7 @@ void I2C_protocol::readData(uint8_t data[], const size_t len, uint8_t address){
     }
     i2c_cmd_handle_t cmd = i2c_cmd_link_create();
     i2c_master_start(cmd);
-    i2c_master_write_byte(cmd, (address << 1) | I2C_MASTER_READ, I2C_MASTER_ACK);
+    i2c_master_write_byte(cmd, (address << 1) | I2C_MASTER_READ, true);
     if (len > 1) {
         i2c_master_read(cmd, data, len - 1, I2C_MASTER_ACK);
     }
@@ -98,6 +98,9 @@ void I2C_protocol::readData(uint8_t data[], const size_t len, uint8_t address){
 }
 
 void I2C_protocol::log_I2C_master_cmd_begin_err(esp_err_t err){
+    if(err == ESP_OK){
+        return;
+    }
     if(err == ESP_ERR_INVALID_ARG){
         ESP_LOGE(TAG, "Error sending I2C message : invalid arg");
     }
