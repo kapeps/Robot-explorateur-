@@ -17,7 +17,7 @@ class Robot {
     void turnAroundItself(float angle);
     void walkStraight(float distanceMeters);
     void controlMotors();
-
+    void decodeI2CMessage(String message);
     
 
     float desiredSpeedLeft = 0.5;

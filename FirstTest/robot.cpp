@@ -98,7 +98,6 @@ void Robot::controlMotors() {
     desiredSpeedRight = _control_distance_right.compute(_RightDistance - _lastRightDistance);
     desiredSpeedLeft = _control_distance_left.compute(_LeftDistance - _lastLeftDistance);
 
-    Serial.println(desiredDistanceLeft - _LeftDistance + _lastLeftDistance);
   }
 
 
@@ -138,6 +137,27 @@ void Robot::controlMotors() {
     analogWrite(RIGHT_MOTOR_PWM, -1 * outputRight);
     digitalWrite(RIGHT_MOTOR_DIRECTION, HIGH);
 
+  }
+
+}
+
+
+void Robot::decodeI2CMessage(String message) {
+  if (message[0] == '0') {
+    Serial.println("Mode 0");
+    robotMode = true;
+    desiredSpeedLeft = (int)message[1]+256*(int)message[2];
+    desiredSpeedRight = (int)message[3]+256*(int)message[4];
+    controlMotors();
+  } else if (message[0] == '1') {
+    Serial.println("Mode 1");
+
+  } else if (message[0] == '2') {
+    Serial.println("Mode 2");
+
+    
+  }else{
+    Serial.println(message[0]);
   }
 
 }
