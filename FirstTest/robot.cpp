@@ -87,6 +87,29 @@ void Robot::walkStraight(float distanceMeters) {
 }
 
 
+void Robot::walkDifferential(float distanceMetersRight, float distanceMetersLeft) {
+  _lastLeftDistance = Left_Motor.get_distance();
+  _lastRightDistance = Right_Motor.get_distance();
+  _LeftDistance = _lastLeftDistance;
+  _RightDistance = _lastRightDistance;
+  desiredDistanceRight = distanceMetersRight * 1000 * QUANTITY_OF_TICS / ( 2 * WHEEL_RADIUS * 3.14);
+  desiredDistanceLeft = distanceMetersLeft * 1000 * QUANTITY_OF_TICS / ( 2 * WHEEL_RADIUS * 3.14);
+
+  while ((desiredDistanceLeft - _LeftDistance + _lastLeftDistance) > 2 or (desiredDistanceRight - _RightDistance + _lastRightDistance) > 2) {
+
+    controlMotors();
+
+  }
+
+
+  _beginTime = millis();
+  while (millis() - _beginTime < 50) {
+    desiredDistanceRight = _RightDistance - _lastRightDistance;
+    desiredDistanceLeft = _LeftDistance - _lastLeftDistance;
+    controlMotors();
+  }
+}
+
 void Robot::controlMotors() {
 
   if (robotMode == false) {
@@ -143,20 +166,41 @@ void Robot::controlMotors() {
 
 
 void Robot::decodeI2CMessage(String message) {
-  if (message[0] == '0') {
-    Serial.println("Mode 0");
+  if (message[0] == 0) {
     robotMode = true;
-    desiredSpeedLeft = (int)message[1]+256*(int)message[2];
-    desiredSpeedRight = (int)message[3]+256*(int)message[4];
+
+    if (message[1] & 0b10000000 == 0b10000000) { //it is a negative number
+      desiredSpeedLeft = -(int)message[2] - 256 * int(message[1] & 0b01111111);
+    } else { //positive number
+      desiredSpeedLeft = (int)message[2] + 256 * int(message[1]);
+    }
+    if (message[3] & 0b10000000 == 0b10000000) { //it is a negative number
+      desiredSpeedRight = -(int)message[4] - 256 * int(message[3] & 0b01111111);
+    } else { //positive number
+      desiredSpeedRight = (int)message[4] + 256 * int(message[3]);
+    }
     controlMotors();
-  } else if (message[0] == '1') {
-    Serial.println("Mode 1");
 
-  } else if (message[0] == '2') {
-    Serial.println("Mode 2");
+  } else if (message[0] == 1) {
+    robotMode = false;
+    float distanceLeft;
+    float distanceRight;
+    if (message[1] & 0b10000000 == 0b10000000) { //it is a negative number
+      distanceLeft = -(int)message[2] - 256 * int(message[1] & 0b01111111);
+    } else { //positive number
+      distanceLeft = (int)message[2] + 256 * int(message[1]);
+    }
+    if (message[3] & 0b10000000 == 0b10000000) { //it is a negative number
+      distanceRight = -(int)message[4] - 256 * int(message[3] & 0b01111111);
+    } else { //positive number
+      distanceRight = (int)message[4] + 256 * int(message[3]);
+    }
 
-    
-  }else{
+    walkDifferential(distanceRight,distanceLeft);
+  } else if (message[0] == 2) {
+
+
+  } else {
     Serial.println(message[0]);
   }
 

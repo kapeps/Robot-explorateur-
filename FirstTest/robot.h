@@ -16,6 +16,7 @@ class Robot {
     void controlItEntirely(float angle);
     void turnAroundItself(float angle);
     void walkStraight(float distanceMeters);
+    void walkDifferential(float distanceMetersRight, float distanceMetersLeft);
     void controlMotors();
     void decodeI2CMessage(String message);
     

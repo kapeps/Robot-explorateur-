@@ -21,7 +21,7 @@ void setup()
 void loop()
 {
   Wire.beginTransmission(4); // transmit to device #4
-  Wire.write("0test");        // sends five bytes
+  Wire.write("0QQ");        // sends five bytes
   Wire.endTransmission();    // stop transmitting
 
   delay(500);
