@@ -35,6 +35,14 @@
             <v-list-tile-title>Led</v-list-tile-title>
           </v-list-tile-content>
         </v-list-tile>
+        <v-list-tile to="/motor">
+          <v-list-tile-action>
+            <v-icon>mdi-lightbulb</v-icon>
+          </v-list-tile-action>
+          <v-list-tile-content>
+            <v-list-tile-title>Motor</v-list-tile-title>
+          </v-list-tile-content>
+        </v-list-tile>
       </v-list>
     </v-navigation-drawer>
 
@@ -51,7 +59,7 @@
 
 
     <v-footer color="red accent-4" app fixed>
-      <span class="white--text">&copy;CentraleSupelec         La Frabrique</span>
+      <span class="white--text">&copy;CentraleSupelec         La Frabrique  Test</span>
     </v-footer>
     
   </v-app>

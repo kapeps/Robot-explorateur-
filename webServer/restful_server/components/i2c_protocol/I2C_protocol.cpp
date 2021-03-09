@@ -63,13 +63,6 @@ std::vector<uint8_t> I2C_protocol::scanBus(){
     return adresses;
 }  
 
-void I2C_protocol::identify_adresses(std::vector<uint8_t> *addresses){
-
-    for(std::vector<uint8_t>::iterator it = addresses->begin(); it != addresses->end(); ++it){
-        sendData(command_identify, sizeof(command_identify), *it);
-    }
-}
-
 void I2C_protocol::sendData(const uint8_t data[], const size_t len, uint8_t address){
     
     i2c_cmd_handle_t cmd = i2c_cmd_link_create();
@@ -78,8 +71,9 @@ void I2C_protocol::sendData(const uint8_t data[], const size_t len, uint8_t addr
     i2c_master_write(cmd, data, len, true);
     i2c_master_stop(cmd);
     I2C_protocol::log_I2C_master_cmd_begin_err( i2c_master_cmd_begin(I2C_NUM, cmd, 1000 / portTICK_RATE_MS) );
-    i2c_cmd_link_delete(cmd);
+    //i2c_cmd_link_delete(cmd);
 }
+
 
 void I2C_protocol::readData(uint8_t data[], const size_t len, uint8_t address){
     if (len == 0) {
@@ -116,4 +110,27 @@ void I2C_protocol::log_I2C_master_cmd_begin_err(esp_err_t err){
     else{
         ESP_LOGW(TAG, "Error sending I2C message : Unknown error");
     }
+
+}
+
+//direction variable = true to reverse
+
+void I2C_protocol::setDrivetrainSpeed(int16_t leftSpeed, int16_t rightSpeed){ 
+    if(leftSpeed < 0){
+        if(leftSpeed == -32768){ //short handles value from -32768 to +32767
+            leftSpeed++;
+        }
+        leftSpeed = -leftSpeed;
+        leftSpeed |= 0b1000000000000000; //set the 16th bit to 1 to indicate that the value is supposed to be negative
+    }
+    if(rightSpeed < 0){
+        if(rightSpeed == -32768){ //short handles value from -32768 to +32767
+            rightSpeed++;
+        }
+        rightSpeed = -rightSpeed;
+        rightSpeed |= 0b1000000000000000; //set the 16th bit to 1 to indicate that the value is supposed to be negative
+    }
+    ESP_LOGI(TAG, "Message : %d %d %d %d %d", 1, (uint8_t)(leftSpeed >> 8), (uint8_t)leftSpeed, (uint8_t)(rightSpeed >> 8), (uint8_t)rightSpeed);
+    uint8_t message[5] = {0, (uint8_t)(leftSpeed >> 8), (uint8_t)leftSpeed, (uint8_t)(rightSpeed >> 8), (uint8_t)rightSpeed};
+    sendData(message, 5, 10);
 }

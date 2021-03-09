@@ -165,20 +165,25 @@ void Robot::controlMotors() {
 }
 
 
-void Robot::decodeI2CMessage(String message) {
+void Robot::decodeI2CMessage(uint8_t message[]) {
   if (message[0] == 0) {
     robotMode = true;
 
-    if (message[1] & 0b10000000 == 0b10000000) { //it is a negative number
-      desiredSpeedLeft = -(int)message[2] - 256 * int(message[1] & 0b01111111);
+    if ( (message[1] >> 7) & 1) { //it is a negative number
+      desiredSpeedLeft = -message[2] - 256 * (message[1] & 0b01111111);
     } else { //positive number
-      desiredSpeedLeft = (int)message[2] + 256 * int(message[1]);
+      desiredSpeedLeft = message[2] + 256 * message[1];
     }
-    if (message[3] & 0b10000000 == 0b10000000) { //it is a negative number
-      desiredSpeedRight = -(int)message[4] - 256 * int(message[3] & 0b01111111);
+    if ( (message[3] >> 7) & 1) { //it is a negative number
+      desiredSpeedRight = -message[4] - 256 * (message[3] & 0b01111111);
     } else { //positive number
-      desiredSpeedRight = (int)message[4] + 256 * int(message[3]);
+      desiredSpeedRight = message[4] + 256 * message[3];
     }
+    Serial.print("Desired speed left : ");
+    Serial.println(desiredSpeedLeft);
+    Serial.print("Desired speed right : ");
+    Serial.println(desiredSpeedRight);
+    
     controlMotors();
 
   } else if (message[0] == 1) {

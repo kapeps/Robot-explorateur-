@@ -9,8 +9,8 @@
 void blinkTask( void * pvParameters);
 void startBlinkTask();
 
-int onTime;
-int offTime;;
+static int onTime;
+static int offTime;;
 
 
 #endif //LED_BLINK_TASK

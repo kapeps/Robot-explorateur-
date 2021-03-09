@@ -5,7 +5,6 @@
 #include "freertos/task.h"
 
 
-
 static const char* TAG = "i2c_self_test";
 
 static void i2c_slave_task( void * pvParameters ){

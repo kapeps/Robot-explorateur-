@@ -26,7 +26,7 @@ void motor2ISR() {
 
 
 void setup() {
-  Wire.begin(4);                // join i2c bus with address #4
+  Wire.begin(10);                // join i2c bus with address #4
   Wire.onReceive(receiveEvent); // register event
 
   pinMode(RIGHT_MOTOR_PWM, OUTPUT);
@@ -58,19 +58,26 @@ void loop() {
 
     }
 
-  */
-  delay(100);
+  *
+   */
+   delay(100);
+  
 
 }
 
 void receiveEvent(int howMany)
 {
-  String message = "";
-  while (0 < Wire.available()) // loop through all but the last
+  uint8_t message[32];
+  int i = 0;
+  while (0 < Wire.available() && i<20) // loop through all but the last
   {
-    char c = Wire.read(); // receive byte as a character
-    message = message + c;
+    uint8_t c = Wire.read(); // receive byte as a character
+    message[i] = c;
+    Serial.print(c, BIN);
+    Serial.print(" ");
+    ++i;
   }
-  Serial.println(message);
+  Serial.println(" was received");
+  
   Robot.decodeI2CMessage(message);
 }

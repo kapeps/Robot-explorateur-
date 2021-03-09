@@ -1,5 +1,6 @@
 #include "rest_server.h"
 
+#include "I2C_protocol.h"
 #include "led_blink_task.h"
 
 static const char *REST_TAG = "esp-rest";
@@ -139,6 +140,57 @@ static esp_err_t led_post_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
+/* Simple handler for led control, used by rest_server.c */
+static esp_err_t speed_post_handler(httpd_req_t *req)
+{
+    int total_len = req->content_len;
+    int cur_len = 0;
+    char *buf = ((rest_server_context_t *)(req->user_ctx))->scratch;
+    int received = 0;
+    if (total_len >= SCRATCH_BUFSIZE) {
+        /* Respond with 500 Internal Server Error */
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "content too long");
+        return ESP_FAIL;
+    }
+    while (cur_len < total_len) {
+        received = httpd_req_recv(req, buf + cur_len, total_len);
+        if (received <= 0) {
+            /* Respond with 500 Internal Server Error */
+            httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to post control value");
+            return ESP_FAIL;
+        }
+        cur_len += received;
+    }
+    buf[total_len] = '\0';
+
+    cJSON *root = cJSON_Parse(buf);
+    int16_t speed = (uint16_t)(cJSON_GetObjectItem(root, "speed")->valueint);
+    uint8_t direction = (uint8_t)(cJSON_GetObjectItem(root, "direction")->valueint);
+    int16_t leftSpeed;
+    int16_t rightSpeed;
+    if(direction == 0){ //forwards
+        leftSpeed = speed;
+        rightSpeed = speed;
+    }
+    else if(direction == 1){ //backwards
+        leftSpeed = -speed;
+        rightSpeed = -speed;
+    }
+    else if(direction == 2){ //left
+        leftSpeed = -speed;
+        rightSpeed = speed;
+    }
+    else{//right
+        leftSpeed = speed;
+        rightSpeed = -speed;
+    }
+    my_protocol.setDrivetrainSpeed(leftSpeed, rightSpeed);
+    ESP_LOGI(REST_TAG, "leftSpeed : %d, rightSpeed : %d", leftSpeed, rightSpeed);
+    cJSON_Delete(root);
+    httpd_resp_sendstr(req, "Post control value successfully");
+    return ESP_OK;
+}
+
 /* Simple handler for getting system handler */
 static esp_err_t system_info_get_handler(httpd_req_t *req)
 {
@@ -230,6 +282,15 @@ esp_err_t start_rest_server(const char *base_path)
         .user_ctx = rest_context
     };
     httpd_register_uri_handler(server, &led_post_uri);
+
+    /* URI handler for speed control */
+    httpd_uri_t speed_post_uri = {
+        .uri = "/api/v1/speed",
+        .method = HTTP_POST,
+        .handler = speed_post_handler,
+        .user_ctx = rest_context
+    };
+    httpd_register_uri_handler(server, &speed_post_uri);
 
     /* URI handler for getting web server files */
     httpd_uri_t common_get_uri = {

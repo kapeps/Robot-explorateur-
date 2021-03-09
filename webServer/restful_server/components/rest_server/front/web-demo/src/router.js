@@ -4,6 +4,7 @@ import Home from './views/Home.vue'
 import Chart from './views/Chart.vue'
 import Light from './views/Light.vue'
 import Led from './views/Led.vue'
+import Motor from './views/Motor.vue'
 
 Vue.use(Router)
 
@@ -30,6 +31,11 @@ export default new Router({
       path: '/led',
       name: 'led',
       component: Led
+    },
+    {
+      path: '/motor',
+      name: 'motor',
+      component: Motor
     }
   ]
 })

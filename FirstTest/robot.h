@@ -18,7 +18,7 @@ class Robot {
     void walkStraight(float distanceMeters);
     void walkDifferential(float distanceMetersRight, float distanceMetersLeft);
     void controlMotors();
-    void decodeI2CMessage(String message);
+    void decodeI2CMessage(uint8_t message[]);
     
 
     float desiredSpeedLeft = 0.5;
