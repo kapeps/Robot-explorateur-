@@ -16,7 +16,7 @@
                       <v-row no-gutters style="height: 150px;">
                         <v-col :key="align" :align-self="align"><v-spacer></v-col>
                         <v-col :key="align" :align-self="align">
-                          <v-btn fab dark large color="red accent-4" @click="set_speed_forward">
+                          <v-btn fab dark large color="red accent-4" @mousedown="set_speed_forward" @mouseup="brake">
                           <v-icon dark>mdi-arrow-up-bold</v-icon>
                           </v-btn>
                         </v-col>
@@ -24,17 +24,17 @@
                       </v-row>
                       <v-row no-gutters style="height: 150px;">
                         <v-col :key="align" :align-self="align">
-                          <v-btn fab dark large color="red accent-4" @click="set_speed_left">
+                          <v-btn fab dark large color="red accent-4" @mousedown="set_speed_left" @mouseup="brake">
                           <v-icon dark>mdi-arrow-left-bold</v-icon>
                           </v-btn>
                         </v-col>
                         <v-col :key="align" :align-self="align">
-                          <v-btn fab dark large color="red accent-4" @click="set_speed_backward">
+                          <v-btn fab dark large color="red accent-4" @mousedown="set_speed_backward" @mouseup="brake">
                           <v-icon dark>mdi-arrow-down-bold</v-icon>
                           </v-btn>
                         </v-col>
                         <v-col :key="align" :align-self="align">
-                          <v-btn fab dark large color="red accent-4" @click="set_speed_right">
+                          <v-btn fab dark large color="red accent-4" @mousedown="set_speed_right"  @mouseup="brake">
                           <v-icon dark>mdi-arrow-right-bold</v-icon>
                           </v-btn>
                         </v-col>
@@ -113,6 +113,20 @@ export default {
         .post("/api/v1/speed", {
           speed: this.speed,
           direction: 3,
+        })
+        .then(data => {
+          console.log(data);
+        })
+        .catch(error => {
+          console.log(error);
+        })
+    },
+
+    brake: function() {
+      this.$ajax
+        .post("/api/v1/speed", {
+          speed: 0,
+          direction: 0,
         })
         .then(data => {
           console.log(data);
