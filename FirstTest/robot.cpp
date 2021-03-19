@@ -190,15 +190,15 @@ void Robot::decodeI2CMessage(uint8_t message[]) {
     robotMode = false;
     float distanceLeft;
     float distanceRight;
-    if (message[1] & 0b10000000 == 0b10000000) { //it is a negative number
-      distanceLeft = -(int)message[2] - 256 * int(message[1] & 0b01111111);
+    if  ( (message[1] >> 7) & 1) { //it is a negative number
+      distanceLeft = -(int)message[2] - 256 * (message[1] & 0b01111111);
     } else { //positive number
-      distanceLeft = (int)message[2] + 256 * int(message[1]);
+      distanceLeft = (int)message[2] + 256 * (message[1]);
     }
-    if (message[3] & 0b10000000 == 0b10000000) { //it is a negative number
-      distanceRight = -(int)message[4] - 256 * int(message[3] & 0b01111111);
+    if ( (message[3] >> 7) & 1) { //it is a negative number
+      distanceRight = -(int)message[4] - 256 * (message[3] & 0b01111111);
     } else { //positive number
-      distanceRight = (int)message[4] + 256 * int(message[3]);
+      distanceRight = (int)message[4] + 256 * (message[3]);
     }
 
     walkDifferential(distanceRight,distanceLeft);
