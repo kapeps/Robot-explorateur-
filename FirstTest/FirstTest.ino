@@ -35,6 +35,8 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(ENCODER_LEFT_A), motor2ISR, RISING);
   Serial.begin(9600);
 
+  Robot.robotMode = false;
+  Robot.turnAroundItself(finalAngleToStart - atan (horizontal / vertical) * 360 / (2 * PI));
 
 }
 
@@ -58,10 +60,10 @@ void loop() {
 
     }
 
-  *
-   */
-   delay(100);
-  
+
+  */
+  Robot.controlMotors();
+
 
 }
 
@@ -69,7 +71,7 @@ void receiveEvent(int howMany)
 {
   uint8_t message[32];
   int i = 0;
-  while (0 < Wire.available() && i<20) // loop through all but the last
+  while (0 < Wire.available() && i < 20) // loop through all but the last
   {
     uint8_t c = Wire.read(); // receive byte as a character
     message[i] = c;
@@ -78,6 +80,6 @@ void receiveEvent(int howMany)
     ++i;
   }
   Serial.println(" was received");
-  
+
   Robot.decodeI2CMessage(message);
 }

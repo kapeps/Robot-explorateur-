@@ -47,19 +47,12 @@ void Robot::turnAroundItself(float angle) {
   desiredDistanceRight = -angle * DISTANCE_BETWEEN_WHEELS * QUANTITY_OF_TICS / (2 * WHEEL_RADIUS * 360);
   desiredDistanceLeft = angle * DISTANCE_BETWEEN_WHEELS * QUANTITY_OF_TICS / (2 * WHEEL_RADIUS * 360);
 
-  while ((desiredDistanceLeft - _LeftDistance + _lastLeftDistance) > 2 or (desiredDistanceRight - _RightDistance + _lastRightDistance) > 2) {
 
-    controlMotors();
+  controlMotors();
 
-  }
 
-  //Stop
-  _beginTime = millis();
-  while (millis() - _beginTime < 50) {
-    desiredDistanceRight = _RightDistance - _lastRightDistance;
-    desiredDistanceLeft = _LeftDistance - _lastLeftDistance;
-    controlMotors();
-  }
+
+
 }
 
 void Robot::walkStraight(float distanceMeters) {
@@ -70,19 +63,13 @@ void Robot::walkStraight(float distanceMeters) {
   desiredDistanceRight = distanceMeters * 1000 * QUANTITY_OF_TICS / ( 2 * WHEEL_RADIUS * 3.14);
   desiredDistanceLeft = distanceMeters * 1000 * QUANTITY_OF_TICS / ( 2 * WHEEL_RADIUS * 3.14);
 
-  while ((desiredDistanceLeft - _LeftDistance + _lastLeftDistance) > 2 or (desiredDistanceRight - _RightDistance + _lastRightDistance) > 2) {
 
-    controlMotors();
-
-  }
+  controlMotors();
 
 
-  _beginTime = millis();
-  while (millis() - _beginTime < 50) {
-    desiredDistanceRight = _RightDistance - _lastRightDistance;
-    desiredDistanceLeft = _LeftDistance - _lastLeftDistance;
-    controlMotors();
-  }
+
+
+
 
 }
 
@@ -95,19 +82,11 @@ void Robot::walkDifferential(float distanceMetersRight, float distanceMetersLeft
   desiredDistanceRight = distanceMetersRight * 1000 * QUANTITY_OF_TICS / ( 2 * WHEEL_RADIUS * 3.14);
   desiredDistanceLeft = distanceMetersLeft * 1000 * QUANTITY_OF_TICS / ( 2 * WHEEL_RADIUS * 3.14);
 
-  while ((desiredDistanceLeft - _LeftDistance + _lastLeftDistance) > 2 or (desiredDistanceRight - _RightDistance + _lastRightDistance) > 2) {
 
-    controlMotors();
-
-  }
+  controlMotors();
 
 
-  _beginTime = millis();
-  while (millis() - _beginTime < 50) {
-    desiredDistanceRight = _RightDistance - _lastRightDistance;
-    desiredDistanceLeft = _LeftDistance - _lastLeftDistance;
-    controlMotors();
-  }
+
 }
 
 void Robot::controlMotors() {
@@ -117,10 +96,18 @@ void Robot::controlMotors() {
     _RightDistance = Right_Motor.get_distance();
     _control_distance_right.setSetPoint(desiredDistanceRight);
     _control_distance_left.setSetPoint(desiredDistanceLeft);
+    Serial.println(desiredDistanceRight - _RightDistance);
+
+
 
     desiredSpeedRight = _control_distance_right.compute(_RightDistance - _lastRightDistance);
     desiredSpeedLeft = _control_distance_left.compute(_LeftDistance - _lastLeftDistance);
-
+    if (abs(desiredDistanceRight - _RightDistance) < 15) {
+      desiredSpeedRight = 0;
+    }
+    if (abs(desiredDistanceLeft - _LeftDistance) < 15) {
+      desiredSpeedLeft = 0;
+    }
   }
 
 
@@ -183,7 +170,7 @@ void Robot::decodeI2CMessage(uint8_t message[]) {
     Serial.println(desiredSpeedLeft);
     Serial.print("Desired speed right : ");
     Serial.println(desiredSpeedRight);
-    
+
     controlMotors();
 
   } else if (message[0] == 1) {
@@ -201,7 +188,7 @@ void Robot::decodeI2CMessage(uint8_t message[]) {
       distanceRight = (int)message[4] + 256 * (message[3]);
     }
 
-    walkDifferential(distanceRight,distanceLeft);
+    walkDifferential(distanceRight, distanceLeft);
   } else if (message[0] == 2) {
 
 
