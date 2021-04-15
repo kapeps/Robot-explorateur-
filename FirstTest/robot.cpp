@@ -96,7 +96,6 @@ void Robot::controlMotors() {
     _RightDistance = Right_Motor.get_distance();
     _control_distance_right.setSetPoint(desiredDistanceRight);
     _control_distance_left.setSetPoint(desiredDistanceLeft);
-    Serial.println(desiredDistanceRight - _RightDistance);
 
 
 
@@ -157,14 +156,14 @@ void Robot::decodeI2CMessage(uint8_t message[]) {
     robotMode = true;
 
     if ( (message[1] >> 7) & 1) { //it is a negative number
-      desiredSpeedLeft = -message[2] - 256 * (message[1] & 0b01111111);
+      desiredSpeedLeft = float(-message[2] - 256 * (message[1] & 0b01111111))/1000;
     } else { //positive number
-      desiredSpeedLeft = message[2] + 256 * message[1];
+      desiredSpeedLeft = float(message[2] + 256 * message[1])/1000;
     }
     if ( (message[3] >> 7) & 1) { //it is a negative number
-      desiredSpeedRight = -message[4] - 256 * (message[3] & 0b01111111);
+      desiredSpeedRight = float(-message[4] - 256 * (message[3] & 0b01111111))/1000;
     } else { //positive number
-      desiredSpeedRight = message[4] + 256 * message[3];
+      desiredSpeedRight = float(message[4] + 256 * message[3])/1000;
     }
     Serial.print("Desired speed left : ");
     Serial.println(desiredSpeedLeft);
