@@ -1,0 +1,6 @@
+{
+  1: {"ssid":"AndroidAP3361", "pword":"123test123TEST"},
+  2: {"ssid":"AndroidAP3362", "pword":"123test123test"},
+ -1: {"ssid":"MyDefaultNetwork", "pword":"password4default"},
+}
+ 

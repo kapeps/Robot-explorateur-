@@ -7,6 +7,7 @@
 
 
 
+
 float vertical = 1;
 float horizontal = 1;
 float finalAngleToStart = -90;
@@ -26,6 +27,8 @@ void motor2ISR() {
 
 
 void setup() {
+  //TCCR0B = TCCR0B & B11111000 | B00000010;
+  
   Wire.begin(10);                // join i2c bus with address #4
   Wire.onReceive(receiveEvent); // register event
 
@@ -37,6 +40,7 @@ void setup() {
 
   Robot.robotMode = false;
   Robot.turnAroundItself(finalAngleToStart - atan (horizontal / vertical) * 360 / (2 * PI));
+  
 
 }
 
