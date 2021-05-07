@@ -9,8 +9,6 @@ from PID import PID
 romp = RomiPlatform()
 lm = romp.leftmotor
 rm = romp.rightmotor
-romp.move(1, 1)
-
 
 
 #extint = pyb.ExtInt(Right_Motor._encoder_pin_A, pyb.ExtInt.IRQ_RISING, pyb.Pin.PULL_UP, callback)
@@ -18,11 +16,11 @@ romp.move(1, 1)
 
 def timerCallback(t):
   global romp
-  romp.move(1, 1)
-  print("move")
+  romp.cruise(10, 10)
+  
 
   
-time = pyb.Timer(4, freq = 1, callback = timerCallback)
+time = pyb.Timer(5, freq = 1, callback = timerCallback)
 
 
 

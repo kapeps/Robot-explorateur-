@@ -69,7 +69,7 @@ class RomiMotor :
       self.sleep.value(0)        # 0 = sleep, 1 = active
       self.enca = Pin('Y4', Pin.IN, Pin.PULL_UP)
       self.encb = Pin('Y5', Pin.IN, Pin.PULL_UP)
-    self.pwmscale = (self.pwmtim.period() + 1) // 100 # scale factor for percent power
+    self.pwmscale = (self.pwmtim.period() + 1) // 10000 # scale factor for percent power
     self.count_a = 0      # counter for impulses on the A output of the encoder
     self.target_a = 0     # target value for the A counter (for controlled rotation)
     self.count_b = 0      # counter for impulses on the B output of the encoder
@@ -81,22 +81,17 @@ class RomiMotor :
     self.rpm_last_a = 0   # value of the A counter when we last computed the rpms
     self.cruise_rpm = 0   # target value for the rpms
 
-    self._control_left = PID()
-    self._control_left.setTunings(KP_LEFT, KI_LEFT, KD_LEFT);
-    self._control_left.setSampleTime(1);
-    self._control_left.setOutputLimits(-255, 255)
+    self._control = PID()
+    self._control.setTunings(KP, KI, KD);
+    self._control.setSampleTime(1);
+    self._control.setOutputLimits(-10000, 10000)
 
-
-    self._control_right = PID()
-    self._control_right.setTunings(KP_RIGHT, KI_RIGHT, KD_RIGHT);
-    self._control_right.setSampleTime(1);
-    self._control_right.setOutputLimits(-255, 255)
 
     ExtInt(self.enca, ExtInt.IRQ_RISING, Pin.PULL_UP, self.enca_handler)
     ExtInt(self.encb, ExtInt.IRQ_RISING, Pin.PULL_UP, self.encb_handler)
     if RomiMotor.rpmtimer is None :   # create only one shared timer for all instances
       RomiMotor.rpmtimer = Timer(4)
-      RomiMotor.rpmtimer.init(freq=4, callback=RomiMotor.class_rpm_handler)
+      RomiMotor.rpmtimer.init(freq=100, callback=RomiMotor.class_rpm_handler)
     RomiMotor.rpm_handlers.append(self.rpm_handler) # register the handler for this instance
   
   """
@@ -106,12 +101,11 @@ class RomiMotor :
   """
   def enca_handler(self, pin) :
     self.count_a += 1
-    self.time_a = pyb.millis()
-    if pyb.elapsed_millis(self.time_b) > self.elapsed_a_b :
+    if self.encb.value():
       self.dirsensed = -1   # A occurs before B
     else :
       self.dirsensed = 1    # B occurs before A
-    if self.target_a > 0 :  # If we have a target rotation
+    if self.target_a > 0 :  # If we have a target rotation      
       if self.count_a >= self.target_a :
         self.pwm.pulse_width(0)   # If we reached of exceeded the rotation, stop the motor
         self.target_a = 0         # remove the target
@@ -120,43 +114,50 @@ class RomiMotor :
       elif (self.target_a - self.count_a) < 60 :
         self.pwm.pulse_width(15 * self.pwmscale)  # If we are close to the target, slow down
 
+
   """
   Handler for interrupts caused by impulses on the B output of the encoder.
   """
   def encb_handler(self, pin) :
     self.count_b += 1
-    self.elapsed_a_b = pyb.elapsed_millis(self.time_a)  # Memorize the duration since the last A impulse
- 
-
-  """
-  This is the handler of the timer interrupts to compute the pid
-  """
-  #def pid_handler():
-  #  self.rpm = 4 * (self.count_a - self.rpm_last_a) 
-  #  self.rpm_last_a = self.count_a      # Memorize the number of impulses on A
-  #  if self.cruise_rpm != 0 :           # If we have an RPM target
-
 
 
   """
   This is the handler of the timer interrupts to compute the rpms
   """
   def rpm_handler(self, tim) :
-    self.rpm = 4 * (self.count_a - self.rpm_last_a)   # The timer is at 4Hz
+    self.rpm =  self.dirsensed*100*(self.count_a - self.rpm_last_a)   # The timer is at 1000Hz
     self.rpm_last_a = self.count_a      # Memorize the number of impulses on A
+    
     if self.cruise_rpm != 0 :           # If we have an RPM target
+
+
+      
+      self._control.setSetPoint(self.cruise_rpm)
+
+      output = self._control.compute(self.rpm)
+
+      if output < 0 :
+        output = -output
+        self.dir.off()
+      else :
+        self.dir.on()
+
+      print(output)
+      self.pwm.pulse_width(output * self.pwmscale) 
+      self.sleep.on()
+
       # Add a correction to the PWM according to the difference in RPMs
-      delta = abs(self.rpm - self.cruise_rpm)
-      if delta < 100 :
-        corr = delta // 40
-      elif delta < 500 :
-        corr = delta // 20
-      else :
-        corr = delta // 10
-      if self.cruise_rpm < self.rpm :
-      	self.pwm.pulse_width(max(5*self.pwmscale, self.pwm.pulse_width() - self.pwmscale * corr))
-      else :
-      	self.pwm.pulse_width(min(100*self.pwmscale, self.pwm.pulse_width() + self.pwmscale * corr))
+      #delta = abs(self.rpm - self.cruise_rpm)
+      #if delta < 100 :
+      #  corr = delta // 40
+      #elif delta < 500 :
+      #  corr = delta // 20
+      #else :
+      #  corr = delta // 10
+      #if self.cruise_rpm < self.rpm :
+      #	self.pwm.pulse_width(max(5*self.pwmscale, self.pwm.pulse_width() - self.pwmscale * corr))
+      #else :
   
   """
   Set the power of the motor in percents.
@@ -282,6 +283,7 @@ class RomiPlatform :
   def move(self, lturns, rturns, power=20) :
     self.leftmotor.rotatewheel(lturns, power)
     self.rightmotor.rotatewheel(rturns, power)
+    
     
   """
   Set a target RPM value for the wheels.
