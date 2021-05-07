@@ -10,7 +10,7 @@
 
 
 #define SDA_PIN GPIO_NUM_21
-#define SCL_PIN GPIO_NUM_22
+#define SCL_PIN GPIO_NUM_
 #define I2C_NUM I2C_NUM_0
 #define I2C_MASTER_FREQUENCY 1000 //Hz
 
