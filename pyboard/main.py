@@ -12,13 +12,14 @@ rm = romp.rightmotor
 
 
 #extint = pyb.ExtInt(Right_Motor._encoder_pin_A, pyb.ExtInt.IRQ_RISING, pyb.Pin.PULL_UP, callback)
-
+ 
+#romp.move(180, 180) 
+#romp.move(180, -180)
+#romp.move(180, 180)
 
 def timerCallback(t):
   global romp
-  romp.cruise(10, 10)
-  
-
+  romp.move(180, 180)
   
 time = pyb.Timer(5, freq = 1, callback = timerCallback)
 

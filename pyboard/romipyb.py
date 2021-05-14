@@ -86,12 +86,17 @@ class RomiMotor :
     self._control.setSampleTime(1);
     self._control.setOutputLimits(-10000, 10000)
 
+    self._control_distance = PID()
+    self._control_distance.setTunings(KP_DISTANCE, KI_DISTANCE, KD_DISTANCE);
+    self._control_distance.setSampleTime(1);
+    self._control_distance.setOutputLimits(-MAXIMUM_VELOCITY, MAXIMUM_VELOCITY)
+
 
     ExtInt(self.enca, ExtInt.IRQ_RISING, Pin.PULL_UP, self.enca_handler)
     ExtInt(self.encb, ExtInt.IRQ_RISING, Pin.PULL_UP, self.encb_handler)
     if RomiMotor.rpmtimer is None :   # create only one shared timer for all instances
       RomiMotor.rpmtimer = Timer(4)
-      RomiMotor.rpmtimer.init(freq=100, callback=RomiMotor.class_rpm_handler)
+      RomiMotor.rpmtimer.init(freq=1000, callback=RomiMotor.class_rpm_handler)
     RomiMotor.rpm_handlers.append(self.rpm_handler) # register the handler for this instance
   
   """
@@ -106,13 +111,19 @@ class RomiMotor :
     else :
       self.dirsensed = 1    # B occurs before A
     if self.target_a > 0 :  # If we have a target rotation      
+
       if self.count_a >= self.target_a :
+        self.cruise_rpm = 0
         self.pwm.pulse_width(0)   # If we reached of exceeded the rotation, stop the motor
         self.target_a = 0         # remove the target
       elif (self.target_a - self.count_a) < 30 :
-        self.pwm.pulse_width(7 * self.pwmscale)   # If we are very close to the target, slow down a lot
-      elif (self.target_a - self.count_a) < 60 :
-        self.pwm.pulse_width(15 * self.pwmscale)  # If we are close to the target, slow down
+        self.cruise_rpm = 0
+        self.pwm.pulse_width(10 * self.pwmscale)   # If we are very close to the target, slow down a lot
+      else:
+        self._control_distance.setSetPoint(self.target_a)
+        self.cruise_rpm = self._control_distance.compute(self.count_a)
+        
+        #self.pwm.pulse_width(15 * self.pwmscale)  # If we are close to the target, slow down
 
 
   """
@@ -126,13 +137,11 @@ class RomiMotor :
   This is the handler of the timer interrupts to compute the rpms
   """
   def rpm_handler(self, tim) :
-    self.rpm =  self.dirsensed*100*(self.count_a - self.rpm_last_a)   # The timer is at 1000Hz
+    self.rpm =  self.dirsensed*1000*(self.count_a - self.rpm_last_a)   # The timer is at 1000Hz
     self.rpm_last_a = self.count_a      # Memorize the number of impulses on A
     
     if self.cruise_rpm != 0 :           # If we have an RPM target
 
-
-      
       self._control.setSetPoint(self.cruise_rpm)
 
       output = self._control.compute(self.rpm)
@@ -143,7 +152,6 @@ class RomiMotor :
       else :
         self.dir.on()
 
-      print(output)
       self.pwm.pulse_width(output * self.pwmscale) 
       self.sleep.on()
 
@@ -194,25 +202,25 @@ class RomiMotor :
       self.sleep.on()
 
   """
-  Perform 'turns' rotations of the wheel at 'power' percents of the max power.
+  Perform 'tics' 1/360 rotation of the wheel at 'power' percents of the max power.
   If 'turns' is positive, the wheel turns forward, if it is negative, it turns backward.
   """
-  def rotatewheel(self, turns, power=20):
-    if turns < 0 :
+  def rotatewheel(self, tics, power=20):
+    if tics < 0 :
       sign = -1
-      turns = -turns
+      tics = -tics
     else :
       sign = 1
     self.count_a = 0
     self.count_b = 0
-    self.target_a = int(360 * turns)
-    self.throttle(sign*power)
+    self.target_a = int(tics)
+    #self.throttle(sign*power)
   
   """
   Wait for the rotations requested by 'rotatewheel' to be done.
   """
   def wait(self) :
-    while self.count_a < self.target_a :
+    while self.target_a !=0 :
       pass
 
   """
@@ -277,12 +285,14 @@ class RomiPlatform :
 
   """
   Make the wheels turn by a given number of turns, at 'power' percents of the 
-  maximum power. 'lturns' and 'rturns' may be floats.
+  maximum power. 'ltics' and 'rtics' are always ints.
   Positive values turn forward, negative values turn backward.
   """
-  def move(self, lturns, rturns, power=20) :
-    self.leftmotor.rotatewheel(lturns, power)
-    self.rightmotor.rotatewheel(rturns, power)
+  def move(self, ltics, rtics, power=20) :
+    self.leftmotor.enca_handler(1)
+    self.rightmotor.enca_handler(1)    
+    self.leftmotor.rotatewheel(ltics, power)
+    self.rightmotor.rotatewheel(rtics, power)
     
     
   """
