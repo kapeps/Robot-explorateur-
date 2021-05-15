@@ -69,7 +69,7 @@ class RomiMotor :
       self.sleep.value(0)        # 0 = sleep, 1 = active
       self.enca = Pin('Y4', Pin.IN, Pin.PULL_UP)
       self.encb = Pin('Y5', Pin.IN, Pin.PULL_UP)
-    self.pwmscale = (self.pwmtim.period() + 1) // 10000 # scale factor for percent power
+    self.pwmscale = (self.pwmtim.period() + 1) // 10000 # scale factot for permyriad(10000 as it allows to get more distinct points and avoid divisions) power
     self.count_a = 0      # counter for impulses on the A output of the encoder
     self.target_a = 0     # target value for the A counter (for controlled rotation)
     self.count_b = 0      # counter for impulses on the B output of the encoder
@@ -80,13 +80,16 @@ class RomiMotor :
     self.rpm = 0          # current speed in rotations per second
     self.rpm_last_a = 0   # value of the A counter when we last computed the rpms
     self.cruise_rpm = 0   # target value for the rpms
+    self.walking = False  # Boolean that indicates if the robot is walking or stationary
+    self.desiredDir = True# Boolean that indecates the desired direction of the motor for move function
 
-    self._control = PID()
+
+    self._control = PID() # PID control for the rotation of the wheels
     self._control.setTunings(KP, KI, KD);
     self._control.setSampleTime(1);
     self._control.setOutputLimits(-10000, 10000)
 
-    self._control_distance = PID()
+    self._control_distance = PID() # PID control for the cascade of the distance
     self._control_distance.setTunings(KP_DISTANCE, KI_DISTANCE, KD_DISTANCE);
     self._control_distance.setSampleTime(1);
     self._control_distance.setOutputLimits(-MAXIMUM_VELOCITY, MAXIMUM_VELOCITY)
@@ -96,7 +99,7 @@ class RomiMotor :
     ExtInt(self.encb, ExtInt.IRQ_RISING, Pin.PULL_UP, self.encb_handler)
     if RomiMotor.rpmtimer is None :   # create only one shared timer for all instances
       RomiMotor.rpmtimer = Timer(4)
-      RomiMotor.rpmtimer.init(freq=1000, callback=RomiMotor.class_rpm_handler)
+      RomiMotor.rpmtimer.init(freq=100, callback=RomiMotor.class_rpm_handler)
     RomiMotor.rpm_handlers.append(self.rpm_handler) # register the handler for this instance
   
   """
@@ -116,15 +119,15 @@ class RomiMotor :
         self.cruise_rpm = 0
         self.pwm.pulse_width(0)   # If we reached of exceeded the rotation, stop the motor
         self.target_a = 0         # remove the target
-      elif (self.target_a - self.count_a) < 30 :
-        self.cruise_rpm = 0
-        self.pwm.pulse_width(10 * self.pwmscale)   # If we are very close to the target, slow down a lot
-      else:
+        self.walking = False
+
+      else:                       # The cascade control for the distance
         self._control_distance.setSetPoint(self.target_a)
         self.cruise_rpm = self._control_distance.compute(self.count_a)
-        
-        #self.pwm.pulse_width(15 * self.pwmscale)  # If we are close to the target, slow down
+        self.walking = True
 
+  
+        
 
   """
   Handler for interrupts caused by impulses on the B output of the encoder.
@@ -134,38 +137,28 @@ class RomiMotor :
 
 
   """
-  This is the handler of the timer interrupts to compute the rpms
+  This is the handler of the timer interrupts to compute the rpm
   """
   def rpm_handler(self, tim) :
-    self.rpm =  self.dirsensed*1000*(self.count_a - self.rpm_last_a)   # The timer is at 1000Hz
+    self.rpm =  100*(self.count_a - self.rpm_last_a)   # The timer is at 100Hz
     self.rpm_last_a = self.count_a      # Memorize the number of impulses on A
     
-    if self.cruise_rpm != 0 :           # If we have an RPM target
+    if self.cruise_rpm != 0 :           # If we have an rpm target
 
       self._control.setSetPoint(self.cruise_rpm)
-
       output = self._control.compute(self.rpm)
-
-      if output < 0 :
-        output = -output
+      if output < 0 or self.desiredDir == False:  # Corrects the control output for the desired direction
+        if output < 0:
+          output = -output
         self.dir.off()
       else :
         self.dir.on()
 
       self.pwm.pulse_width(output * self.pwmscale) 
+      self.walking = True
       self.sleep.on()
-
-      # Add a correction to the PWM according to the difference in RPMs
-      #delta = abs(self.rpm - self.cruise_rpm)
-      #if delta < 100 :
-      #  corr = delta // 40
-      #elif delta < 500 :
-      #  corr = delta // 20
-      #else :
-      #  corr = delta // 10
-      #if self.cruise_rpm < self.rpm :
-      #	self.pwm.pulse_width(max(5*self.pwmscale, self.pwm.pulse_width() - self.pwmscale * corr))
-      #else :
+    else:
+      self.walking = False
   
   """
   Set the power of the motor in percents.
@@ -175,11 +168,12 @@ class RomiMotor :
     if pct is None :
       return
     if pct < 0 :
-      self.dir.on()
+      self.dir.off()
       pct = -pct
     else :
-      self.dir.off()
-    self.pwm.pulse_width(pct * self.pwmscale)
+      self.dir.on()
+    self.pwm.pulse_width(100 * pct * self.pwmscale)
+    self.walking = True
     self.sleep.on()
   
   """
@@ -207,14 +201,14 @@ class RomiMotor :
   """
   def rotatewheel(self, tics, power=20):
     if tics < 0 :
-      sign = -1
+      self.desiredDir = False
       tics = -tics
     else :
-      sign = 1
+      self.desiredDir = True
     self.count_a = 0
     self.count_b = 0
+    self._control_distance.setOutputLimits(-power*100, power*100)
     self.target_a = int(tics)
-    #self.throttle(sign*power)
   
   """
   Wait for the rotations requested by 'rotatewheel' to be done.
@@ -224,20 +218,20 @@ class RomiMotor :
       pass
 
   """
-  Set a target RPMs. The wheel turns in its current rotation direction,
+  Set a target rpms. The wheel turns in its current rotation direction,
   'rpm' should be non negative.
   """
   def cruise(self, rpm) :
-    self.cruise_rpm = int(rpm * 60)
+    self.cruise_rpm = int(rpm * 6)
   
   """
-  Get the current RPMs. This is always non negative, regardless of the rotation direction.
+  Get the current rpms. This is always non negative, regardless of the rotation direction.
   """
   def get_rpms(self) :
     return self.rpm / 60
   
   """
-  Cancel all targets of rotation and RPM
+  Cancel all targets of rotation and rpm
   """
   def clear(self) :
     self.target_a = 0
@@ -266,6 +260,12 @@ class RomiPlatform :
     self.rightmotor = RomiMotor(X=False)
     self.control = Pin('X12', Pin.OUT)
     self.control.value(1)
+  
+  """
+  Returns if the robot is walking or not
+  """
+  def is_robot_walking(self):
+    return self.leftmotor.walking or self.rightmotor.walking
 
   """
   Set the throttle (power in percents) on the left and right motors.
@@ -289,14 +289,22 @@ class RomiPlatform :
   Positive values turn forward, negative values turn backward.
   """
   def move(self, ltics, rtics, power=20) :
-    self.leftmotor.enca_handler(1)
-    self.rightmotor.enca_handler(1)    
-    self.leftmotor.rotatewheel(ltics, power)
-    self.rightmotor.rotatewheel(rtics, power)
+        
+    start = True
+    while(self.is_robot_walking() or start): 
+      if (self.is_robot_walking()):
+        start = False
+      else:
+        self.leftmotor.enca_handler(1)
+        self.rightmotor.enca_handler(1)     
+        self.leftmotor.rotatewheel(ltics, power)
+        self.rightmotor.rotatewheel(rtics, power)
+    self.clear()
+
     
     
   """
-  Set a target RPM value for the wheels.
+  Set a target rpm value for the wheels.
   The current rotation direction is preserved, only  the rotation speed is regulated.
   """
   def cruise(self, lrpms, rrpms) :
@@ -304,11 +312,13 @@ class RomiPlatform :
     self.rightmotor.cruise(rrpms)
 
   """
-  Cancel all rotation and RPM targets.
+  Cancel all rotation and rpm targets.
   """
   def clear(self) :
     self.leftmotor.clear()
     self.rightmotor.clear()
+    self.leftmotor.desiredDir = True
+    self.rightmotor.desiredDir = True
 
   """
   Stop both motors.
