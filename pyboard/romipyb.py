@@ -271,9 +271,9 @@ class RomiPlatform :
     self.rightmotor = RomiMotor(X=True)
     self.control = Pin('X12', Pin.OUT)
     self.control.value(1)
-    self.switchLeft = Pin('X10', Pin.IN, Pin.PULL_UP)
-    self.switchRight = Pin('X11', Pin.IN, Pin.PULL_UP)
-    self.switchMiddle = Pin('X12', Pin.IN, Pin.PULL_UP)
+    self.switchLeft = Pin('Y10', Pin.IN, Pin.PULL_UP)
+    self.switchRight = Pin('X10', Pin.IN, Pin.PULL_UP)
+    self.switchMiddle = Pin('X9', Pin.IN, Pin.PULL_UP)
 
     ExtInt(self.switchLeft, ExtInt.IRQ_FALLING, Pin.PULL_UP, self.switchLeft_handler)
     ExtInt(self.switchRight, ExtInt.IRQ_FALLING, Pin.PULL_UP, self.switchRight_handler)
@@ -313,7 +313,7 @@ class RomiPlatform :
   """
   The action of backing up to the right
   """
-  def leftMovementBack(self):
+  def RightMovementBack(self):
     self.leftmotor.pwm.pulse_width(100 * 50 * self.leftmotor.pwmscale)
     self.leftmotor.target_a = 450
     self.leftmotor.desiredDir = True
