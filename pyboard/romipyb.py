@@ -222,6 +222,11 @@ class RomiMotor :
   'rpm' should be non negative.
   """
   def cruise(self, rpm) :
+    if rpm < 0 :
+      self.desiredDir = False
+      rpm = -rpm
+    else :
+      self.desiredDir = True    
     self.cruise_rpm = int(rpm * 6)
   
   """
@@ -236,6 +241,12 @@ class RomiMotor :
   def clear(self) :
     self.target_a = 0
     self.cruise_rpm = 0
+    self.desiredDir = True
+    self.rpm = 0
+    self.rpm_last_a = 0
+    self.count_a = 0
+    self.count_b = 0
+    self.pwm.pulse_width(0)
 
   """
   Stop the motor.
@@ -256,15 +267,90 @@ class RomiPlatform :
   The control ('CTRL') pin of the chassis should be connected to pin X12
   """
   def __init__(self) :
-    self.leftmotor = RomiMotor(X=True)
-    self.rightmotor = RomiMotor(X=False)
+    self.leftmotor = RomiMotor(X=False)
+    self.rightmotor = RomiMotor(X=True)
     self.control = Pin('X12', Pin.OUT)
     self.control.value(1)
-  
+    self.switchLeft = Pin('X10', Pin.IN, Pin.PULL_UP)
+    self.switchRight = Pin('X11', Pin.IN, Pin.PULL_UP)
+    self.switchMiddle = Pin('X12', Pin.IN, Pin.PULL_UP)
+
+    ExtInt(self.switchLeft, ExtInt.IRQ_FALLING, Pin.PULL_UP, self.switchLeft_handler)
+    ExtInt(self.switchRight, ExtInt.IRQ_FALLING, Pin.PULL_UP, self.switchRight_handler)
+    ExtInt(self.switchMiddle, ExtInt.IRQ_FALLING, Pin.PULL_UP, self.switchMiddle_handler)
+
+
+  """
+  Handler for the interruption caused by the left switch, meaning an obstacle found in the left
+  """
+  def switchLeft_handler(self,pin):
+    self.clear()
+    self.leftMovementBack()
+
+
+  """
+  The action of backing up to the left
+  """
+  def leftMovementBack(self):
+    self.leftmotor.pwm.pulse_width(100 * 50 * self.leftmotor.pwmscale)
+    self.leftmotor.target_a = 100
+    self.leftmotor.desiredDir = True
+    self.leftmotor._control_distance.setOutputLimits(-2*100, 2*100)
+    self.leftmotor.sleep.on()
+    self.rightmotor.pwm.pulse_width(100 * 50 * self.rightmotor.pwmscale)
+    self.rightmotor.target_a = 450
+    self.rightmotor.desiredDir = True
+    self.rightmotor._control_distance.setOutputLimits(-4*100, 4*100)
+    self.rightmotor.sleep.on()
+
+  """
+  Handler for the interruption caused by the Right switch, meaning an obstacle found in the left
+  """
+  def switchRight_handler(self,pin):
+    self.clear()
+    self.RightMovementBack()
+
+  """
+  The action of backing up to the right
+  """
+  def leftMovementBack(self):
+    self.leftmotor.pwm.pulse_width(100 * 50 * self.leftmotor.pwmscale)
+    self.leftmotor.target_a = 450
+    self.leftmotor.desiredDir = True
+    self.leftmotor._control_distance.setOutputLimits(-4*100, 4*100)
+    self.leftmotor.sleep.on()
+    self.rightmotor.pwm.pulse_width(100 * 50 * self.rightmotor.pwmscale)
+    self.rightmotor.target_a = 100
+    self.rightmotor.desiredDir = True
+    self.rightmotor._control_distance.setOutputLimits(-2*100, 2*100)
+    self.rightmotor.sleep.on()
+
+  """
+  Handler for the interruption caused by the middle switch, meaning an obstacle found in the left
+  """
+  def switchMiddle_handler(self,pin):
+    self.clear()
+    self.MiddleMovementBack()
+
+  """
+  The action of backing up to the left
+  """
+  def MiddleMovementBack(self):
+    self.leftmotor.pwm.pulse_width(100 * 50 * self.leftmotor.pwmscale)
+    self.leftmotor.target_a = 100
+    self.leftmotor.desiredDir = True
+    self.leftmotor._control_distance.setOutputLimits(-2*100, 2*100)
+    self.leftmotor.sleep.on()
+    self.rightmotor.pwm.pulse_width(100 * 50 * self.rightmotor.pwmscale)
+    self.rightmotor.target_a = 450
+    self.rightmotor.desiredDir = True
+    self.rightmotor._control_distance.setOutputLimits(-4*100, 4*100)
+    self.rightmotor.sleep.on()
+
   """
   Returns if the robot is walking or not
   """
-  def is_robot_walking(self):
+  def isRobotWalking(self):
     return self.leftmotor.walking or self.rightmotor.walking
 
   """
@@ -289,16 +375,16 @@ class RomiPlatform :
   Positive values turn forward, negative values turn backward.
   """
   def move(self, ltics, rtics, power=20) :
-        
+    self.clear()    
     start = True
-    while(self.is_robot_walking() or start): 
-      if (self.is_robot_walking()):
+    while(self.isRobotWalking() or start): 
+      if (self.isRobotWalking()):
         start = False
       else:
         self.leftmotor.enca_handler(1)
         self.rightmotor.enca_handler(1)     
-        self.leftmotor.rotatewheel(ltics, power)
-        self.rightmotor.rotatewheel(rtics, power)
+        self.leftmotor.rotatewheel(-ltics, power)
+        self.rightmotor.rotatewheel(-rtics, power)
     self.clear()
 
     
@@ -308,8 +394,9 @@ class RomiPlatform :
   The current rotation direction is preserved, only  the rotation speed is regulated.
   """
   def cruise(self, lrpms, rrpms) :
-    self.leftmotor.cruise(lrpms)
-    self.rightmotor.cruise(rrpms)
+    self.clear()
+    self.leftmotor.cruise(-lrpms)
+    self.rightmotor.cruise(-rrpms)
 
   """
   Cancel all rotation and rpm targets.
@@ -317,8 +404,7 @@ class RomiPlatform :
   def clear(self) :
     self.leftmotor.clear()
     self.rightmotor.clear()
-    self.leftmotor.desiredDir = True
-    self.rightmotor.desiredDir = True
+
 
   """
   Stop both motors.
