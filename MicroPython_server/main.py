@@ -74,22 +74,18 @@ class tcp_server(object):
     def __init__(self):
         self.rawLidarReadings = None
         self.server = uasyncio.start_server(self.tcp_callback, my_ip, TCP_PORT, backlog=5)
-        uasyncio.create_task(self.i2c_routine())
+        self.i2c_master = i2c_master.I2C_master(self)
         uasyncio.create_task(self.server)
 
     def getRawLidarReadings(self):
         return self.rawLidarReadings
 
+    def setRawLidarReadings(self, rawLidarReadings):
+        self.rawLidarReadings = rawLidarReadings
+
     async def tcp_callback(self, streamReader, streamWriter):
         print("New accepted connection")
         tcp_client(streamReader, streamWriter, self)
-    
-    async def i2c_routine(self):
-        while True:
-            reading = await i2c_master.getRawLidarReadings(10)
-            if reading != None:
-                self.rawLidarReadings = reading
-            await uasyncio.sleep_ms(5)
 
 
     
@@ -98,8 +94,17 @@ class tcp_server(object):
 async def main():
     server = tcp_server()
     print("Ready")
+    b = False
     while True:
-        await uasyncio.sleep_ms(1000)
+        if b :
+            await server.i2c_master.lidar.setLidarMotorPwm(50)
+            print("half speed")
+        else:
+            await server.i2c_master.lidar.setLidarMotorPwm(100)
+            print("full speed")
+
+        b= not b
+        await uasyncio.sleep_ms(10000)
 
 
 
