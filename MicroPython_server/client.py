@@ -1,33 +1,60 @@
-
 import socket
+import struct
 import time
-ip = "192.168.1.148"
-port = 10000
+#from matplotlib import plt
 
+#UDP_IP = "192.168.1.148"
+#UDP_PORT = 5005
+#MESSAGE = "Hello, World!"
+#sock = socket.socket(socket.AF_INET, # Internet
+#                     socket.SOCK_DGRAM) # UDP
+#print ("UDP target IP:", UDP_IP)
+#print ("UDP target port:", UDP_PORT)
+#data = struct.pack("<HH", 1, 1)
+#sock.sendto(data, (UDP_IP, UDP_PORT))
 
-# Create a TCP/IP socket
+TCP_IP = "192.168.1.148"
+TCP_PORT = 5006
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-# Connect the socket to the port where the server is listening
-sock.connect((ip, port))
+sock.connect((TCP_IP, TCP_PORT))
 
-print("Connected")
+data = struct.pack("<H", 1) #start raw lidar readings stream
+sock.send(data)
+print("Data sent")
+recv = sock.recv(4) #readings message length
+READINGS_LENGTH = struct.unpack_from("<H", recv)[0]
+print(READINGS_LENGTH)
 
-try:
-    
-    # Send data
-    message = 'This is the message.  It will be repeated.'
-    print('sending "%s"' % message)
-    sock.sendall(message.encode("utf-8"))
 
-    # Look for the response
-    amount_received = 0
-    amount_expected = len(message)
-    
-    while amount_received < amount_expected:
-        data = sock.recv(1024)
-        amount_received += len(data)
-        print('received "%s"' % data)
 
-finally:
-    print('closing socket')
-    sock.close()
+import matplotlib.pyplot as plt
+import numpy as np
+
+plt.ion()
+fig, ax = plt.subplots()
+x, y = [0 for i in range(READINGS_LENGTH)],[0 for i in range(READINGS_LENGTH)]
+sc = ax.scatter(x,y)
+plt.grid(True)
+plt.xlim(-5,5)
+plt.ylim(-5,5)
+plt.draw()
+
+
+while True:
+    read = sock.recv(4*READINGS_LENGTH)
+    print(len(read))
+    if(len(read) == 4*READINGS_LENGTH):
+        for i in range(READINGS_LENGTH):
+            heading = (read[4*i] + (read[4*i + 1] << 8))/64.0
+            distance = (read[4*i + 2] + (read[4*i + 3] << 8))/4.0 /1000
+            x[i] = distance*np.sin(heading * np.pi/180)
+            y[i] = distance*np.cos(heading * np.pi/180)
+    sc.set_offsets(np.c_[x,y])
+    fig.canvas.draw_idle()
+    plt.pause(0.1)
+
+data = struct.pack("<H", 0) #stop raw lidar readings stream
+sock.send(data)
+print("Data sent")
+
+plt.waitforbuttonpress()
