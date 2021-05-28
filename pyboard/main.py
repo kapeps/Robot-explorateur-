@@ -33,18 +33,3 @@ while not switch.value():
 
 
 
-
-
-
-
-
-
-def timerCallback(t):
-  global romp
-  romp.cruise(-10, -10) 
-
-  
-#time = pyb.Timer(5, freq = 1, callback = timerCallback)
-
-
-
