@@ -11,12 +11,37 @@ lm = romp.leftmotor
 rm = romp.rightmotor
 
 
-#extint = pyb.ExtInt(Right_Motor._encoder_pin_A, pyb.ExtInt.IRQ_RISING, pyb.Pin.PULL_UP, callback)
-#romp.move(-720,-720,power = 5)
+i2c = pyb.I2C(2)
+i2c.init(pyb.I2C.SLAVE, addr = 0x04)
+switch = pyb.Switch()
+
+data = bytearray(5)
+while not switch.value():
+    try:
+        data = i2c.recv(5)
+    except OSError:
+        data = None
+
+    if data is None:
+        print("None")
+    else:
+        romp.decodeI2CMessage(data)
+
+    pyb.delay(1500)
+
+
+
+
+
+
+
+
+
+
 
 def timerCallback(t):
   global romp
-  romp.cruise(10, 10) 
+  romp.cruise(-10, -10) 
 
   
 #time = pyb.Timer(5, freq = 1, callback = timerCallback)
