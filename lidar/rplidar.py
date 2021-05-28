@@ -1,14 +1,11 @@
 from machine import UART
 from machine import Pin
-from machine import PWM
 from uarray import array
-import uselect as select
 import ucollections as collections
-
-import struct
 import time
-import _thread
+import utime
 
+print("Test")
 
 START_FLAG_1 = b'\xA5'
 START_FLAG_2 = b'\x5A'
@@ -26,7 +23,14 @@ COMMAND_GET_LIDAR_CONF = b'\x84'
 
 #Response descriptor
 RESPONSE_DECRIPTOR_LENGTH = 7 #bytes
+SCAN_DATATYPE = 129 
+SCAN_RESPONSE_LENGTH = 5 #bytes
+GET_HEALTH_DATATYPE = 3
+GET_HEALTH_RESPONSE_LENGTH = 6#bytes
 
+
+READINGS_LENGTH = 512 #length of the arrays containing the headings and distances
+RXBUFFER_LENGTH = 16384 #bytes
 
 
 class RPLidarError(Exception):
@@ -35,29 +39,33 @@ class RPLidarError(Exception):
 class CommunicationError(RPLidarError):
     pass
 
+class ScanningError(RPLidarError):
+    pass
+
 class RPLidar(object):
 
-    def __init__(self, id = 2, baudrate=115200, timeout=5000, motoctl = 13):
+    def __init__(self, id = 2, baudrate=115200, timeout=5000, motoctl = 'x5'):
         self.uart = None
-        self.motoctl = Pin(motoctl, Pin.OUT)
-        self.motoPWM = PWM(self.motoctl)
-        self.motoPWM.duty(0)
+        #self.motoctl = Pin(motoctl, Pin.OUT)
+        #self.motoctl.value(1)
+        #self.motoPWM = PWM(self.motoctl)
+        #self.motoPWM.duty(0)
         self.connect(id, baudrate, timeout)
 
-        self.readings_length = 400
-        self._headings = array('H', [0 for i in range(self.readings_length)])
-        self._distances = array('H', [0 for i in range(self.readings_length)])
+        self._rxbuffer = bytearray(32)
+        self._headings = array('H', [0 for i in range(READINGS_LENGTH)])#heading = heading[i]/64.0
+        self._distances = array('H', [0 for i in range(READINGS_LENGTH)])#distance = distance[i]/4.0 #in mm
         self._readings_index = 0
-        self._descriptor_queue = collections.deque((), 32)
+        self._descriptor_queue = collections.deque((), 32) #File fifo
         self._next_data_type = None
 
         self._status = None
         self._error = None
+        self._scanerrors = 0
 
     def connect(self, id, _baudrate, _timeout):
         self.uart = UART(id)
-        self.uart.irq(UART.RX_ANY, priority = 5, handler = self._serial_handler)
-        self.uart.init(baudrate = _baudrate, bits=8, parity=None, stop=1, timeout = _timeout, txbuf=512)
+        self.uart.init(baudrate = _baudrate, bits=8, parity=None, stop=1, timeout = _timeout, read_buf_len=RXBUFFER_LENGTH)
         self.set_motor_pwm()
 
     def disconnect(self):
@@ -66,6 +74,11 @@ class RPLidar(object):
         
 
     def _send_request(self, command):
+        if command == COMMAND_SCAN:
+            self._descriptor_queue.append((SCAN_RESPONSE_LENGTH, False, SCAN_DATATYPE))
+        elif command == COMMAND_GET_HEALTH:
+            self._descriptor_queue.append((GET_HEALTH_RESPONSE_LENGTH, False, GET_HEALTH_DATATYPE))
+
         req = START_FLAG_1 + command
         self.uart.write(req)
         print('Command sent: %s' % req)
@@ -99,17 +112,17 @@ class RPLidar(object):
     
     def _read_response(self, length):
         #print("Trying to read response: ",length," bytes")
-        data = self.uart.read(length)
-        #print('Recieved data: ', data)
-        if data == None :
+        bytes_read = self.uart.readinto(self._rxbuffer, length)
+        #print('Recieved data: ', self._rxbuffer)
+        if bytes_read == None :
             print("Timout")
             raise CommunicationError
-        if len(data) != length:
+        if bytes_read != length:
             print('Wrong body size')
             raise CommunicationError
-        return data
 
     def _serial_handler(self):
+
         if(bool(self._descriptor_queue)): #if descriptor queue is not empty, expecting a response descriptor
             data_response_lenght, is_single, data_type = self._descriptor_queue.popleft()
             if self._read_response_descriptor() !=  (data_response_lenght, is_single, data_type):
@@ -118,46 +131,58 @@ class RPLidar(object):
             self._next_data_type = data_type
             return
         
-        elif self._next_data_type == 129: 
-            data = self._read_response(5)
+        elif self._next_data_type == SCAN_DATATYPE: 
+            self._read_response(SCAN_RESPONSE_LENGTH)
 
-            S = data[0] & 0b00000001
-            not_S = (data[0] & 0b00000010) >> 1
-            C = data[1] & 0b00000001
+            S = self._rxbuffer[0] & 0b00000001
+            not_S = (self._rxbuffer[0] & 0b00000010) >> 1
+            C = self._rxbuffer[1] & 0b00000001
             if S == not_S:
-                print("Problem S = not_S")
+                #print("Problem S = not_S")
+                self._scanerrors += 1
                 return
             #quality = data[0] >> 
             if C != 1:
-                print("Problem C != 1")
+                #print("Problem C != 1")
+                self._scanerrors += 1
                 return
             
-            distance_q2 = (data[3]) + (data[4] << 8)
+            if(self._scanerrors > 10):#11 consecutive scan error, reseting lidar
+                print("Many consecutive scan errors, reseting lidar")
+                self.reset()
+                self._scanerrors = 0
+                self.start_scanning()
+                return
+
+            self._scanerrors = 0 #managed to read without error
+            distance_q2 = (self._rxbuffer[3]) + (self._rxbuffer[4] << 8)
             if distance_q2 != 0:
-                #distance = distance_q2/4.0 #in mm
-                #heading = ((data[1] >> 1) + (data[2] << 7))/64.0
-                heading = ((data[1] >> 1) + (data[2] << 7))
+                heading = ((self._rxbuffer[1] >> 1) + (self._rxbuffer[2] << 7))
                 self._headings[self._readings_index] = heading
                 self._distances[self._readings_index] = distance_q2
+                self._readings_index += 1
+                if(self._readings_index >= READINGS_LENGTH):
+                    self._readings_index = 0
+                
                 
         elif self._next_data_type == 6:
-            data = self._read_response(3)
-            print(data[0:1])
-            self._status = int.from_bytes(data[0:1], "little")
-            self._error = int.from_bytes(data[1:2], "little")
+            self._read_response(3)
+            print(self._rxbuffer[0:1])
+            self._status = int.from_bytes(self._rxbuffer[0:1], "little")
+            self._error = int.from_bytes(self._rxbuffer[1:2], "little")
             
         
 
 
     def set_motor_pwm(self, duty=600, freq=2^15-1):
-        self.motoPWM.freq(freq)
-        self.motoPWM.duty(duty)
+        #self.motoPWM.freq(freq)
+        #self.motoPWM.duty(duty)
+        pass
 
     def get_health(self):
         self._status = None
         self._error = None
         self._send_request(COMMAND_GET_HEALTH)
-        self._descriptor_queue.append((3, True, 6))
 
         while self._status == None or self._error == None:
             time.sleep(0.02)
@@ -178,9 +203,7 @@ class RPLidar(object):
         time.sleep(.002)
         if self.uart.any() > 0:
             print("Clearing buffer")
-            data = self.uart.read() #clear uart buffer
-            if data == None:
-                print("Buffer was empty.....")
+            self.uart.read() #clear uart buffer
 
     def reset(self):
         '''A reset operation will make RPLIDAR revert to a similar state as it has just been
@@ -191,15 +214,34 @@ class RPLidar(object):
             wait for at least 2 milliseconds (ms) before sending another request. '''
         print("Resseting RPLidar")
         self._send_request(COMMAND_RESET)
+        time.sleep(1)
+        if self.uart.any() > 0:
+            print("Clearing buffer")
+            self.uart.read(self.uart.any()) #clear uart buffer
+        while bool(self._descriptor_queue):
+            self._descriptor_queue.popleft()
 
     def start_scanning(self):
         self._send_request(COMMAND_SCAN)
-        self._descriptor_queue.append((5, False, 129))
-             
 
-
+    #Slow no preallocation
     def get_reading(self):
         reading = []
         for i in range(len(self._headings)):
             reading.append([self._headings[i]/64.0, self._distances[i]/4.0])
         return reading
+
+    def get_headings_mv(self):
+        return memoryview(self._headings)
+
+    def get_distances_mv(self):
+        return memoryview(self._distances)
+
+    def update(self):
+        inBuff = self.uart.any()
+        if(inBuff > 0):            
+            while  (bool(self._descriptor_queue) and inBuff >= RESPONSE_DECRIPTOR_LENGTH) or \
+                (self._next_data_type == SCAN_DATATYPE and inBuff >= SCAN_RESPONSE_LENGTH) or \
+                (self._next_data_type == GET_HEALTH_DATATYPE and inBuff >= GET_HEALTH_RESPONSE_LENGTH):
+                    self._serial_handler()
+                    inBuff = self.uart.any()
