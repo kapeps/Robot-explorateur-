@@ -275,9 +275,48 @@ class RomiPlatform :
     self.switchRight = Pin('X10', Pin.IN, Pin.PULL_UP)
     self.switchMiddle = Pin('X9', Pin.IN, Pin.PULL_UP)
 
-    ExtInt(self.switchLeft, ExtInt.IRQ_FALLING, Pin.PULL_UP, self.switchLeft_handler)
-    ExtInt(self.switchRight, ExtInt.IRQ_FALLING, Pin.PULL_UP, self.switchRight_handler)
-    ExtInt(self.switchMiddle, ExtInt.IRQ_FALLING, Pin.PULL_UP, self.switchMiddle_handler)
+
+    #Only include the external interruption if you have the switches plugged
+    #ExtInt(self.switchLeft, ExtInt.IRQ_FALLING, Pin.PULL_UP, self.switchLeft_handler)
+    #ExtInt(self.switchRight, ExtInt.IRQ_FALLING, Pin.PULL_UP, self.switchRight_handler)
+    #ExtInt(self.switchMiddle, ExtInt.IRQ_FALLING, Pin.PULL_UP, self.switchMiddle_handler)
+
+
+  """
+  Function that decodes the I2C message and realizes the desired movement
+  """
+  def decodeI2CMessage(self,message):
+    if (message[0] == 0) :
+      desiredSpeedLeft = 0.0
+      desiredSpeedRight = 0.0
+
+      if ( (message[1] >> 7) & 1) : #it is a negative number
+        desiredSpeedLeft = float(-message[2] - 256 * (message[1] & 0b01111111))/1000
+      else :#positive number
+        desiredSpeedLeft = float(message[2] + 256 * message[1])/1000
+      
+      if ( (message[3] >> 7) & 1) : #it is a negative number
+        desiredSpeedRight = float(-message[4] - 256 * (message[3] & 0b01111111))/1000
+      else : #positive number
+        desiredSpeedRight = float(message[4] + 256 * message[3])/1000
+      self.cruise(desiredSpeedLeft, desiredSpeedRight)
+
+
+
+    elif (message[0] == 1) :
+      distanceLeft = 0
+      distanceRight = 0
+      if  ( (message[1] >> 7) & 1) : #it is a negative number
+        distanceLeft = -(int)(message[2]) - 256 * (message[1] & 0b01111111)
+      else : #positive number
+        distanceLeft = (int)(message[2]) + 256 * (message[1])
+      if ( (message[3] >> 7) & 1) : #it is a negative number
+        distanceRight = -(int)(message[4]) - 256 * (message[3] & 0b01111111);
+      else : #//positive number
+        distanceRight = (int)(message[4]) + 256 * (message[3]);
+      self.move(distanceLeft, distanceRight)
+    print(message)
+
 
 
   """
