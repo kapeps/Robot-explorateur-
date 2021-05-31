@@ -1,11 +1,11 @@
 from machine import UART
 from machine import Pin
+from pyb import Timer
 from uarray import array
 import ucollections as collections
 import time
-import utime
 
-print("Test")
+
 
 START_FLAG_1 = b'\xA5'
 START_FLAG_2 = b'\x5A'
@@ -44,12 +44,12 @@ class ScanningError(RPLidarError):
 
 class RPLidar(object):
 
-    def __init__(self, id = 2, baudrate=115200, timeout=5000, motoctl = 'x5'):
+    def __init__(self, id = 2, baudrate=115200, timeout=5000, motoctl = 'X6'):
         self.uart = None
-        #self.motoctl = Pin(motoctl, Pin.OUT)
-        #self.motoctl.value(1)
-        #self.motoPWM = PWM(self.motoctl)
-        #self.motoPWM.duty(0)
+        self.motoctl = Pin(motoctl)
+        self.motoctl_timer = Timer(2, freq = 20000)
+        self.motoPWM_channel = self.motoctl_timer.channel(1, Timer.PWM, pin=self.motoctl)
+        self.motoPWM_channel.pulse_width_percent(50)
         self.connect(id, baudrate, timeout)
 
         self._rxbuffer = bytearray(32)
@@ -174,10 +174,8 @@ class RPLidar(object):
         
 
 
-    def set_motor_pwm(self, duty=600, freq=2^15-1):
-        #self.motoPWM.freq(freq)
-        #self.motoPWM.duty(duty)
-        pass
+    def set_motor_pwm(self, pulse_width_percent=50):
+        self.motoPWM_channel.pulse_width_percent(pulse_width_percent)
 
     def get_health(self):
         self._status = None

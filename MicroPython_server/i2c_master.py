@@ -23,7 +23,9 @@ class I2C_master(object):
         #i2c = SoftI2C(scl=Pin(18), sda=Pin(19), freq=5000, timeout=255) #For software I2C
         self.i2c_lock = uasyncio.Lock()
         self.lidar = I2C_lidar(self)
+        self.drivetrain = I2C_drivetrain(self)
         uasyncio.create_task(self.i2c_master_routine())
+        uasyncio.create_task(self.i2c_drivetrain_routine())
         
     async def i2c_master_routine(self):
         while True:
@@ -31,6 +33,11 @@ class I2C_master(object):
             if reading != None:
                 self.tcp_server.setRawLidarReadings(reading)
             await uasyncio.sleep_ms(5)
+
+    async def i2c_drivetrain_routine(self):
+        while True:
+            await self.drivetrain.setDrivetrainSpeed()
+            await uasyncio.sleep_ms(100)
         
     def getLock(self):
         return self.i2c_lock
@@ -83,7 +90,6 @@ class I2C_lidar(object):
         #print(2, "Waiting for lock")
         await self.i2c_master.getLock().acquire()
         await uasyncio.sleep_ms(200) #waiting dor I2C line to be ready
-        print(2, "Lock acquired")
         while tries < retries: 
             try:
                 self.i2c_master.i2c.writeto(0x42, b)
@@ -94,7 +100,7 @@ class I2C_lidar(object):
                 tries+=1
 
         if tries >= retries:
-            print(2, "Failed")
+            print("Failed to write lidar pwm over I2C")
             self.i2c_master.getLock().release()
             return None
 
@@ -106,25 +112,64 @@ class I2C_lidar(object):
                 break
             except OSError:
                 tries+=1
-        #print(2, "Releasing lock")
+       
         self.i2c_master.getLock().release()
         
 
+class I2C_drivetrain(object):
+    def __init__(self, i2c_master):
+        self.i2c_master = i2c_master
+        self.leftSpeed = 0
+        self.rightSpeed = 0
 
-    #def getLidarReadings(retries = 5):
-    #    
-    #    read = getRawLidarReadings(retries)
-    #    if read == None:
-    #        return None
-    #
-    #    reading = []
-    #    for i in range(READINGS_LENGTH):
-    #        reading.append( [(read[4*i] + (read[4*i + 1] << 8))/64.0, (read[4*i + 2] + (read[4*i + 3] << 8))/4.0] )
-    #
-    #    return reading
+    async def setDrivetrainSpeed(self):
+        leftSpeed = self.leftSpeed
+        rightSpeed = self.rightSpeed
+    
+        if(leftSpeed < 0):
+            if(leftSpeed == -32768): #short handles value from -32768 to +32767
+                leftSpeed +=1
+            leftSpeed = -leftSpeed
+            leftSpeed |= 0b1000000000000000 #set the 16th bit to 1 to indicate that the value is supposed to be negative
 
+        if(rightSpeed < 0):
+            if(rightSpeed == -32768): #short handles value from -32768 to +32767
+                rightSpeed +=1
+            rightSpeed = -rightSpeed
+            rightSpeed |= 0b1000000000000000 #set the 16th bit to 1 to indicate that the value is supposed to be negative
+
+        data = bytearray([0, leftSpeed >> 8, leftSpeed, rightSpeed >>8, rightSpeed])
         
-        
 
+        tries = 0
+        retries = 5
+        b=bytearray(1)
+        b[0] = 45
+        await self.i2c_master.getLock().acquire()
+        await uasyncio.sleep_ms(50) #waiting dor I2C line to be ready
+        while tries < retries: 
+            try:
+                self.i2c_master.i2c.writeto(0x04, b)
+                await uasyncio.sleep_ms(50)
+                break
+            except OSError:
+                tries+=1
 
+        if tries >= retries:
+            print("Failed to set drivetrain speed over I2C")
+            self.i2c_master.getLock().release()
+            return None
 
+        tries=0
+        while tries < retries: 
+            try:
+                self.i2c_master.i2c.writeto(0x04, data)
+                await uasyncio.sleep_ms(50)
+                break
+            except OSError:
+                tries+=1
+
+        if tries >= retries:
+            print("Failed to set drivetrain speed over I2C")
+
+        self.i2c_master.getLock().release()

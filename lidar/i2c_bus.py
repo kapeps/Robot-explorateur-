@@ -29,11 +29,12 @@ class I2C_bus(object):
         self._rxbuffer = bytearray(32)
         self._mv_rxbuffer = memoryview(self._rxbuffer) #pointer for speed optimization, slicing will not create a new buffer
 
-    def update(self):
+    def update(self, rplidar):
         if(self._send_mode == 1):
             try:
                 recv = bytearray(1)
                 self.i2c.recv(recv, timeout=200) #timeout in milliseconds
+                print(recv)
                 if(recv[0] == 1):
                     for i in range(READINGS_LENGTH):
                         self._txbuffer[4*i] = self._headings_mv[i]
@@ -44,13 +45,21 @@ class I2C_bus(object):
                     self._num_in_txbuff = 4*READINGS_LENGTH
                     self._txsendretries = 0
 
+                if(recv[0] == 2):
+                    print("Changing motor pwm")
+                    recv = bytearray(2)
+                    self.i2c.recv(recv, timeout=500) #timeout in milliseconds
+                    duty_cycle_percent = recv[0] + (recv[1] << 8)
+                    print("New duty cycle : ", duty_cycle_percent)
+                    rplidar.set_motor_pwm(duty_cycle_percent)
+
+
             except OSError:
                 pass
 
         if(self._num_in_txbuff > 0):
             try:
                 self.i2c.send(self._mv_txbuffer[0:self._num_in_txbuff], timeout=500) #timeout in milliseconds
-                #self.i2c.send(self._txbuffer, timeout=500)
                 self._num_in_txbuff = 0
                 self._txsendretries = 0
             except OSError:

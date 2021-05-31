@@ -291,14 +291,15 @@ class RomiPlatform :
       desiredSpeedRight = 0.0
 
       if ( (message[1] >> 7) & 1) : #it is a negative number
-        desiredSpeedLeft = float(-message[2] - 256 * (message[1] & 0b01111111))/1000
+        desiredSpeedLeft = float(-message[2] - 256 * (message[1] & 0b01111111))/10
       else :#positive number
-        desiredSpeedLeft = float(message[2] + 256 * message[1])/1000
+        desiredSpeedLeft = float(message[2] + 256 * message[1])/10
       
       if ( (message[3] >> 7) & 1) : #it is a negative number
-        desiredSpeedRight = float(-message[4] - 256 * (message[3] & 0b01111111))/1000
+        desiredSpeedRight = float(-message[4] - 256 * (message[3] & 0b01111111))/10
       else : #positive number
-        desiredSpeedRight = float(message[4] + 256 * message[3])/1000
+        desiredSpeedRight = float(message[4] + 256 * message[3])/10
+      print(desiredSpeedLeft, desiredSpeedRight)
       self.cruise(desiredSpeedLeft, desiredSpeedRight)
 
 
@@ -315,7 +316,7 @@ class RomiPlatform :
       else : #//positive number
         distanceRight = (int)(message[4]) + 256 * (message[3]);
       self.move(distanceLeft, distanceRight)
-    print(message)
+    #print(message)
 
 
 

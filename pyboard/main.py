@@ -16,20 +16,30 @@ i2c.init(pyb.I2C.SLAVE, addr = 0x04)
 switch = pyb.Switch()
 
 data = bytearray(5)
+check = bytearray(1)
+
 while not switch.value():
     try:
-        data = i2c.recv(5)
+        data = i2c.recv(1, timeout=50)
+        if data[0] == 45:
+            data = i2c.recv(5, timeout=200)
+            romp.decodeI2CMessage(data)
     except OSError:
         data = None
 
-    if data is None:
-        print("None")
-    else:
-        romp.decodeI2CMessage(data)
 
-    pyb.delay(1500)
+    #pyb.delay(1500)
 
 
+
+
+
+def timerCallback(t):
+  global romp
+  romp.cruise(-10, -10) 
+
+  
+#time = pyb.Timer(5, freq = 1, callback = timerCallback)
 
 
 

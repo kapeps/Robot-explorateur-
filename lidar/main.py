@@ -13,8 +13,4 @@ lidar.start_scanning()
 
 while True:
     lidar.update()
-    i2c.update()
-
-
-lidar.stop()
-print(lidar.get_reading())
+    i2c.update(lidar)

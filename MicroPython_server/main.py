@@ -32,7 +32,7 @@ class tcp_client(object):
     async def recv_routine(self):
         while True:
             try:
-                data = await self.streamReader.read(4)
+                data = await self.streamReader.read(2)
                 if len(data) > 0:
                     recv = struct.unpack("<H", data)
 
@@ -46,6 +46,15 @@ class tcp_client(object):
 
                     elif recv[0] == 0:
                         self.shouldStreamLidar = False
+
+                    elif recv[0] == 2:
+                        data = await self.streamReader.read(4)
+                        if(len(data) == 4):
+                            recv = struct.unpack("<hh", data)
+                            self.tcp_server.i2c_master.drivetrain.leftSpeed = recv[0]
+                            self.tcp_server.i2c_master.drivetrain.rightSpeed = recv[1]
+
+
                 await uasyncio.sleep_ms(5)
 
             except OSError:
@@ -88,22 +97,12 @@ class tcp_server(object):
         tcp_client(streamReader, streamWriter, self)
 
 
-    
 
 
 async def main():
     server = tcp_server()
     print("Ready")
-    b = False
     while True:
-        if b :
-            await server.i2c_master.lidar.setLidarMotorPwm(50)
-            print("half speed")
-        else:
-            await server.i2c_master.lidar.setLidarMotorPwm(100)
-            print("full speed")
-
-        b= not b
         await uasyncio.sleep_ms(10000)
 
 
