@@ -1,0 +1,20 @@
+{
+    "project_name":       "bootloader",
+    "project_path":       "C:/Users/anoel/esp/esp-idf/components/bootloader/subproject",
+    "build_dir":          "C:/Users/anoel/Documents/GitHub/Robot-explorateur-/webServer/restful_server/build/bootloader",
+    "config_file":        "C:/Users/anoel/Documents/GitHub/Robot-explorateur-/webServer/restful_server/sdkconfig",
+    "config_defaults":    "",
+    "app_elf":            "bootloader.elf",
+    "app_bin":            "bootloader.bin",
+    "git_revision":       "v4.1.1-dirty",
+    "target":             "esp32",
+    "phy_data_partition": "",
+    "monitor_baud" :      "115200",
+    "monitor_toolprefix": "xtensa-esp32-elf-",
+    "config_environment" : {
+        "COMPONENT_KCONFIGS" : "C:/Users/anoel/esp/esp-idf/components/efuse/Kconfig;C:/Users/anoel/esp/esp-idf/components/esp32/Kconfig;C:/Users/anoel/esp/esp-idf/components/esp_common/Kconfig;C:/Users/anoel/esp/esp-idf/components/log/Kconfig;C:/Users/anoel/esp/esp-idf/components/spi_flash/Kconfig",
+        "COMPONENT_KCONFIGS_PROJBUILD" : "C:/Users/anoel/esp/esp-idf/components/bootloader/Kconfig.projbuild;C:/Users/anoel/esp/esp-idf/components/esptool_py/Kconfig.projbuild;C:/Users/anoel/esp/esp-idf/components/partition_table/Kconfig.projbuild"
+    },
+    "build_components" : [ "bootloader", "bootloader_support", "efuse", "esp32", "esp_common", "esp_rom", "esptool_py", "log", "main", "micro-ecc", "partition_table", "soc", "spi_flash", "xtensa", "" ],
+    "build_component_paths" : [ "C:/Users/anoel/esp/esp-idf/components/bootloader", "C:/Users/anoel/esp/esp-idf/components/bootloader_support", "C:/Users/anoel/esp/esp-idf/components/efuse", "C:/Users/anoel/esp/esp-idf/components/esp32", "C:/Users/anoel/esp/esp-idf/components/esp_common", "C:/Users/anoel/esp/esp-idf/components/esp_rom", "C:/Users/anoel/esp/esp-idf/components/esptool_py", "C:/Users/anoel/esp/esp-idf/components/log", "C:/Users/anoel/esp/esp-idf/components/bootloader/subproject/main", "C:/Users/anoel/esp/esp-idf/components/bootloader/subproject/components/micro-ecc", "C:/Users/anoel/esp/esp-idf/components/partition_table", "C:/Users/anoel/esp/esp-idf/components/soc", "C:/Users/anoel/esp/esp-idf/components/spi_flash", "C:/Users/anoel/esp/esp-idf/components/xtensa", "" ]
+}
