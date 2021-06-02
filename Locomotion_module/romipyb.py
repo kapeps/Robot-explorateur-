@@ -48,7 +48,7 @@ class RomiMotor :
   """
   def __init__(self, X=True) :
     if X :
-      self.pwmpin = Pin('X1', Pin.OUT_PP)
+      self.pwmpin = Pin('X6', Pin.OUT_PP)
       self.pwmtim = Timer(2, freq=5000)
       self.pwm = self.pwmtim.channel(1, mode=Timer.PWM, pin=self.pwmpin)
       self.pwm.pulse_width(0)
@@ -140,6 +140,7 @@ class RomiMotor :
   This is the handler of the timer interrupts to compute the rpm
   """
   def rpm_handler(self, tim) :
+
     self.rpm =  100*(self.count_a - self.rpm_last_a)   # The timer is at 100Hz
     self.rpm_last_a = self.count_a      # Memorize the number of impulses on A
     
@@ -271,16 +272,23 @@ class RomiPlatform :
     self.rightmotor = RomiMotor(X=True)
     self.control = Pin('X12', Pin.OUT)
     self.control.value(1)
-    self.switchLeft = Pin('Y10', Pin.IN, Pin.PULL_UP)
+    
+    
+    self.switchLeft = Pin('X11', Pin.IN, Pin.PULL_UP)
     self.switchRight = Pin('X10', Pin.IN, Pin.PULL_UP)
-    self.switchMiddle = Pin('X9', Pin.IN, Pin.PULL_UP)
-
-
-    #Only include the external interruption if you have the switches plugged
-    #ExtInt(self.switchLeft, ExtInt.IRQ_FALLING, Pin.PULL_UP, self.switchLeft_handler)
-    #ExtInt(self.switchRight, ExtInt.IRQ_FALLING, Pin.PULL_UP, self.switchRight_handler)
-    #ExtInt(self.switchMiddle, ExtInt.IRQ_FALLING, Pin.PULL_UP, self.switchMiddle_handler)
-
+    self.switchMiddle = Pin('Y12', Pin.IN, Pin.PULL_UP)
+    self.MHsensorRight = Pin('Y11', Pin.IN, Pin.PULL_DOWN)
+    self.MHsensorLeft = Pin('X9', Pin.IN, Pin.PULL_DOWN)
+    self.timer = pyb.Timer(6,freq=1)
+    self.timer.callback(self.sensorsCheck)
+  
+  def sensorsCheck(self,timer):
+    if(not self.switchMiddle.value()) :
+      self.middle_handler(1)
+    if(not self.switchLeft.value() or self.MHsensorLeft.value()) :
+      self.left_handler(1)  
+    if(not self.switchRight.value() or self.MHsensorRight.value()) :
+      self.right_handler(1)  
 
   """
   Function that decodes the I2C message and realizes the desired movement
@@ -299,7 +307,6 @@ class RomiPlatform :
         desiredSpeedRight = float(-message[4] - 256 * (message[3] & 0b01111111))/10
       else : #positive number
         desiredSpeedRight = float(message[4] + 256 * message[3])/10
-      print(desiredSpeedLeft, desiredSpeedRight)
       self.cruise(desiredSpeedLeft, desiredSpeedRight)
 
 
@@ -323,7 +330,7 @@ class RomiPlatform :
   """
   Handler for the interruption caused by the left switch, meaning an obstacle found in the left
   """
-  def switchLeft_handler(self,pin):
+  def left_handler(self,pin):
     self.clear()
     self.leftMovementBack()
 
@@ -346,7 +353,7 @@ class RomiPlatform :
   """
   Handler for the interruption caused by the Right switch, meaning an obstacle found in the left
   """
-  def switchRight_handler(self,pin):
+  def right_handler(self,pin):
     self.clear()
     self.RightMovementBack()
 
@@ -368,7 +375,7 @@ class RomiPlatform :
   """
   Handler for the interruption caused by the middle switch, meaning an obstacle found in the left
   """
-  def switchMiddle_handler(self,pin):
+  def middle_handler(self,pin):
     self.clear()
     self.MiddleMovementBack()
 

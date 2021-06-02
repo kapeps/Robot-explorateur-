@@ -10,10 +10,10 @@ romp = RomiPlatform()
 lm = romp.leftmotor
 rm = romp.rightmotor
 
-
 i2c = pyb.I2C(2)
 i2c.init(pyb.I2C.SLAVE, addr = 0x04)
 switch = pyb.Switch()
+
 
 data = bytearray(5)
 check = bytearray(1)
@@ -28,18 +28,12 @@ while not switch.value():
         data = None
 
 
-    #pyb.delay(1500)
 
 
 
 
 
-def timerCallback(t):
-  global romp
-  romp.cruise(-10, -10) 
 
-  
-#time = pyb.Timer(5, freq = 1, callback = timerCallback)
 
 
 
